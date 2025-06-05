@@ -1,0 +1,261 @@
+/* =================================================================== */
+/* 1. Global & Product Page Styles (Affects bufo.html)
+/* =================================================================== */
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background-color: #f4f4f4;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+header {
+    background-color: #333;
+    color: white;
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+main {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding: 20px;
+    flex-grow: 1;
+}
+
+section {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    flex: 1;
+    min-width: 300px;
+}
+
+/* Styles for the configurator page (bufo.html) */
+.configurator-section { display: flex; flex-direction: column; gap: 15px; }
+.product-image-display { width: 100%; height: 300px; display: flex; justify-content: center; align-items: center; background-color: #eee; border: 1px solid #ddd; overflow: hidden; }
+#productImage { max-width: 100%; max-height: 100%; object-fit: contain; }
+.controls div:not(.add-on-item), .controls label:not(.add-on-item *), .controls input:not(.auth-controls input):not(.add-on-item *), .controls select, .controls button:not(.auth-controls button) { margin-bottom: 10px; display: block; width: calc(100% - 20px); }
+
+/* Generic form element styles */
+input[type="text"], input[type="email"], input[type="number"], textarea, select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+button:hover { background-color: #0056b3; }
+
+/* Add-on styles */
+#addOnSelection h3 { margin-bottom: 10px; color: #333; }
+#addOnOptions { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; }
+.add-on-item { display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; padding: 8px 12px; background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 5px; cursor: pointer; transition: background-color 0.2s ease, border-color 0.2s ease; flex-grow: 1; min-width: 150px; white-space: nowrap; }
+.add-on-item:hover { background-color: #e9e9e9; border-color: #bbb; }
+.add-on-item input[type="radio"], .add-on-item input[type="checkbox"] { margin: 0 !important; padding: 0 !important; display: inline-flex !important; flex-shrink: 0; width: 16px; height: 16px; align-self: center; position: relative; top: 0px; box-sizing: border-box; -webkit-appearance: none; -moz-appearance: none; appearance: none; border: 1px solid #999; border-radius: 50%; outline: none; background-color: #fff; }
+.add-on-item input[type="radio"]:checked { background-color: #007bff; border-color: #007bff; box-shadow: inset 0 0 0 4px #fff; }
+.add-on-item input[type="checkbox"] { border-radius: 3px; }
+.add-on-item input[type="checkbox"]:checked { background-color: #007bff; border-color: #007bff; position: relative; }
+.add-on-item input[type="checkbox"]:checked::before { content: '\2713'; display: block; color: white; font-size: 12px; text-align: center; line-height: 16px; position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+.add-on-item label { margin: 0 !important; padding: 0 !important; display: inline-block !important; flex-grow: 1; flex-shrink: 1; cursor: pointer; font-weight: normal; color: #555; line-height: normal; }
+
+/* Styles for order form, quote history, modal, etc. on bufo.html */
+.back-button { background-color: white; color: #333; border: 1px solid #ccc; padding: 10px 15px; text-decoration: none; display: inline-block; text-align: center; cursor: pointer; }
+#orderForm { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 25px; }
+#orderForm h3 { width: 100%; margin: 0 0 5px 0; }
+#orderForm input[type="text"], #orderForm input[type="email"] { flex: 1; min-width: 150px; }
+#orderForm textarea { width: 100%; min-height: 120px; resize: vertical; }
+#orderForm button { width: 100%; padding: 12px 15px; font-size: 16px; font-weight: bold; margin-top: 15px; }
+.action-buttons-container { display: flex; justify-content: flex-start; gap: 15px; margin-top: 20px; }
+.action-buttons-container button { flex: none; }
+#saveQuoteBtn { background-color: #28a745; padding: 12px 15px; font-size: 16px; font-weight: bold; }
+#saveQuoteBtn:hover { background-color: #218838; }
+#openOrderModalBtn { background-color: #007bff; padding: 12px 15px; font-size: 16px; font-weight: bold; }
+#openOrderModalBtn:hover { background-color: #0056b3; }
+#my-quotes-section { border-top: 1px solid #ddd; margin-top: 30px; padding-top: 20px; box-shadow: none; padding-left: 0; padding-right: 0; padding-bottom: 0; }
+#myQuotesList { list-style: none; padding: 0; }
+#myQuotesList li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px; background-color: #f0f0f0; padding: 15px; margin-bottom: 10px; border-radius: 5px; border-left: 5px solid #007bff; }
+.quote-details { flex-grow: 1; }
+.quote-actions { display: flex; gap: 10px; flex-shrink: 0; }
+.quote-actions button { padding: 6px 12px; font-size: 14px; font-weight: bold; border-radius: 4px; cursor: pointer; border: none; color: white; }
+.quote-order-btn { background-color: #007bff; }
+.quote-order-btn:hover { background-color: #0056b3; }
+.quote-delete-btn { background-color: #dc3545; }
+.quote-delete-btn:hover { background-color: #c82333; }
+.modal-overlay { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); justify-content: center; align-items: center; }
+.modal-content { background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); position: relative; width: 90%; max-width: 500px; }
+.close-button { position: absolute; top: 10px; right: 20px; color: #aaa; font-size: 30px; font-weight: bold; cursor: pointer; transition: color 0.2s ease; }
+.close-button:hover { color: #333; }
+
+
+/* =================================================================== */
+/* 2. Catalog Page Styles (Affects index.html ONLY)
+/* =================================================================== */
+
+/* --- Scoped Global & Variables --- */
+:root {
+    --primary-color: #007bff;
+    --dark-bg: #2c3e50;
+    --light-bg: #f8f9fa;
+    --text-light: #ecf0f1;
+    --text-dark: #34495e;
+    --border-color: #dee2e6;
+}
+
+body.page-catalog {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: var(--light-bg);
+    color: var(--text-dark);
+}
+
+/* Scoped Layout Container */
+.page-catalog .container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* --- Scoped Header & Integrated Auth --- */
+.page-catalog header {
+    background-color: var(--dark-bg);
+    color: var(--text-light);
+    padding: 15px 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.page-catalog .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.page-catalog header h1 {
+    margin: 0;
+    font-size: 1.75rem;
+}
+
+.page-catalog .auth-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.page-catalog #authStatus {
+    font-size: 0.9em;
+    margin-right: 10px;
+    color: var(--text-light);
+    opacity: 0.8;
+}
+
+.page-catalog .auth-controls input {
+    padding: 8px 10px;
+    font-size: 14px;
+    background-color: #4a617a;
+    border: 1px solid #5d7a99;
+    color: var(--text-light);
+    border-radius: 4px;
+    width: 160px;
+}
+
+.page-catalog .auth-controls input::placeholder {
+    color: var(--text-light);
+    opacity: 0.7;
+}
+
+.page-catalog .auth-controls button {
+    padding: 8px 15px;
+    font-size: 14px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.page-catalog .auth-controls button:hover {
+    background-color: #0056b3;
+}
+
+.page-catalog #logoutBtn {
+    background-color: #c82333;
+}
+.page-catalog #logoutBtn:hover {
+    background-color: #a41d2a;
+}
+
+
+/* --- Scoped Main Content & Product Grid --- */
+.page-catalog main {
+    padding: 40px 0; /* Override generic main padding */
+}
+
+.page-catalog main h2 {
+    font-size: 2rem;
+    margin-bottom: 25px;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
+.page-catalog .product-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+}
+
+.page-catalog .product-card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    text-align: center;
+    text-decoration: none;
+    color: var(--text-dark);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.page-catalog .product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+.page-catalog .product-card img {
+    width: 100%;
+    height: 250px;
+    object-fit: contain;
+    background-color: #fff;
+    padding: 10px;
+}
+
+.page-catalog .product-card h3 {
+    margin: 15px 10px 5px;
+    font-size: 1.25rem;
+}
+
+.page-catalog .product-card p {
+    font-size: 0.95em;
+    color: #6c757d;
+    padding: 0 15px 20px;
+    flex-grow: 1;
+}
+
+/* --- Scoped Footer --- */
+.page-catalog footer {
+    background-color: #343a40;
+    color: var(--text-light);
+    text-align: center;
+    padding: 20px 0;
+    margin-top: auto;
+    font-size: 0.9em;
+}
+
+.page-catalog footer p {
+    margin: 0;
+    opacity: 0.8;
+}

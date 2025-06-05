@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Print Product Catalog</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="page-catalog">
+    <header>
+        <div class="container header-content">
+            <h1>CustomForge 3D</h1>
+            <div class="auth-controls">
+                <span id="authStatus">Loading...</span>
+                <input type="email" id="authEmail" placeholder="Email">
+                <input type="password" id="authPassword" placeholder="Password">
+                <button id="signInBtn">Sign In</button>
+                <button id="signUpBtn">Sign Up</button>
+                <button id="logoutBtn" style="display: none;">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <h2>All Products</h2>
+        <section class="product-list" id="productListings">
+            Loading products...
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 3D Printed Products. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script>
+        // This JavaScript does not need to be changed.
+        // It will work perfectly with the new HTML structure.
+        const authStatusSpan = document.getElementById('authStatus');
+        const authEmailInput = document.getElementById('authEmail');
+        const authPasswordInput = document.getElementById('authPassword');
+        const signInBtn = document.getElementById('signInBtn');
+        const signUpBtn = document.getElementById('signUpBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                authStatusSpan.textContent = `Welcome, ${user.email}`;
+                authEmailInput.style.display = 'none';
+                authPasswordInput.style.display = 'none';
+                signInBtn.style.display = 'none';
+                signUpBtn.style.display = 'none';
+                logoutBtn.style.display = 'inline-block';
+            } else {
+                authStatusSpan.textContent = 'You are not logged in.';
+                authEmailInput.style.display = 'inline-block';
+                authPasswordInput.style.display = 'inline-block';
+                signInBtn.style.display = 'inline-block';
+                signUpBtn.style.display = 'inline-block';
+                logoutBtn.style.display = 'none';
+            }
+        });
+
+        signUpBtn.addEventListener('click', async () => { const email = authEmailInput.value; const password = authPasswordInput.value; if (!email || !password) { alert("Please enter email and password to sign up."); return; } try { await auth.createUserWithEmailAndPassword(email, password); alert("Account created! You are now logged in."); authEmailInput.value = ''; authPasswordInput.value = ''; } catch (error) { console.error("Sign up error:", error); alert("Sign up failed: " + error.message); } });
+        signInBtn.addEventListener('click', async () => { const email = authEmailInput.value; const password = authPasswordInput.value; if (!email || !password) { alert("Please enter email and password to sign in."); return; } try { await auth.signInWithEmailAndPassword(email, password); alert("Signed in successfully!"); authEmailInput.value = ''; authPasswordInput.value = ''; } catch (error) { console.error("Sign in error:", error); alert("Sign in failed: " + error.message); } });
+        logoutBtn.addEventListener('click', async () => { try { await auth.signOut(); alert("Signed out."); } catch (error) { console.error("Sign out error:", error); alert("Sign out failed."); } });
+
+        async function loadProducts() {
+            const productListings = document.getElementById('productListings');
+            productListings.innerHTML = '';
+            try {
+                const snapshot = await db.collection('products').get();
+                if (snapshot.empty) { productListings.innerHTML = '<p>No products available yet.</p>'; return; }
+                snapshot.forEach(doc => {
+                    const product = doc.data();
+                    const productId = doc.id;
+                    const productCard = document.createElement('a');
+                    productCard.href = `${productId}.html`;
+                    productCard.classList.add('product-card');
+                    const defaultImageUrl = product.imageMap && product.imageMap[`plain_${product.availableColors[0]}`] ? product.imageMap[`plain_${product.availableColors[0]}`] : 'placeholder.jpg';
+                    productCard.innerHTML = `<img src="${defaultImageUrl}" alt="${product.name}"><h3>${product.name}</h3><p>${product.description}</p>`;
+                    productListings.appendChild(productCard);
+                });
+            } catch (error) {
+                console.error("Error loading products: ", error);
+                productListings.innerHTML = '<p>Error loading products.</p>';
+            }
+        }
+        document.addEventListener('DOMContentLoaded', loadProducts);
+    </script>
+</body>
+</html>
