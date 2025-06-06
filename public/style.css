@@ -366,3 +366,79 @@ body.page-catalog {
     border-color: var(--primary-color, #007bff);
     box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
+
+/* --- Custom File Upload Button Styles --- */
+
+/* This hides the original, ugly <input type="file"> */
+#uploadSection input[type="file"] {
+    display: none;
+}
+
+/* Container for our new button and text */
+.custom-file-upload {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-top: 5px;
+}
+
+/* Styles the <label> to look like a button */
+.file-upload-button {
+    display: inline-block;
+    background-color: #6c757d;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+}
+
+.file-upload-button:hover {
+    background-color: #5a6268;
+}
+
+/* Styles the text that shows the selected file name */
+#fileNameDisplay {
+    font-style: italic;
+    color: #6c757d;
+    font-size: 0.9em;
+}
+
+.section-label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+/* --- Styles for File Upload Preview --- */
+#filePreviewContainer {
+    margin-top: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.file-preview-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background-color: #f8f9fa;
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+    font-size: 0.9em;
+}
+
+.file-preview-item .file-name {
+    flex-grow: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file-preview-item .file-status {
+    flex-shrink: 0;
+    font-weight: bold;
+    color: #6c757d;
+}

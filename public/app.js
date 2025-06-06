@@ -23,9 +23,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const productSizeSelect = document.getElementById('productSize');
     const addOnOptionsDiv = document.getElementById('addOnOptions');
     const typeQuantitiesList = document.getElementById('typeQuantitiesList');
+    const photoUploadInput = document.getElementById('photoUpload');
+    const filePreviewContainer = document.getElementById('filePreviewContainer');
+    const fileNameDisplay = document.getElementById('fileNameDisplay');
 
+    // --- Firebase & State Variables ---
+    const storage = firebase.storage();
     let currentProductData = null;
     let availableAddOns = {};
+    let uploadedImageUrls = [];
+    let isUploading = false;
 
     // --- Initialize EmailJS ---
     (function(){ emailjs.init({ publicKey: "AFIyvSkpq2zKuBi9r" }); })();
@@ -36,119 +43,88 @@ document.addEventListener('DOMContentLoaded', () => {
         setupEventListeners();
         auth.onAuthStateChanged(user => {
             if (user) {
-                saveQuoteBtn.style.display = 'block'; openOrderModalBtn.style.display = 'block'; myQuotesSection.style.display = 'block';
+                saveQuoteBtn.style.display = 'block';
+                openOrderModalBtn.style.display = 'block';
+                if(myQuotesSection) myQuotesSection.style.display = 'block';
                 loadSavedQuotes(user.uid);
-                customerNameInput.value = user.displayName || ''; customerEmailInput.value = user.email || '';
+                customerNameInput.value = user.displayName || '';
+                customerEmailInput.value = user.email || '';
             } else {
-                saveQuoteBtn.style.display = 'none'; openOrderModalBtn.style.display = 'none'; myQuotesSection.style.display = 'none';
-                myQuotesList.innerHTML = ''; customerNameInput.value = ''; customerEmailInput.value = '';
+                saveQuoteBtn.style.display = 'none';
+                openOrderModalBtn.style.display = 'none';
+                if(myQuotesSection) myQuotesSection.style.display = 'none';
+                if(myQuotesList) myQuotesList.innerHTML = '';
+                customerNameInput.value = '';
+                customerEmailInput.value = '';
             }
         });
     }
 
-     // --- Load Product Data (CORRECTED) ---
+    // --- Load Product Data ---
     async function loadConfigData() {
         const productId = currentProductIdInput.value;
         if (!productId) { return; }
-        
         try {
             const productDoc = await db.collection('products').doc(productId).get();
             if (!productDoc.exists) { return; }
-            
             currentProductData = productDoc.data();
-            
             if (currentProductData.defaultImage) { productImage.src = currentProductData.defaultImage; }
+            
+            const createConfigRow = (container, item) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.classList.add('config-item-row');
+                const labelWrapper = document.createElement('div');
+                labelWrapper.classList.add('label-wrapper');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = item.checkId;
+                checkbox.dataset.id = item.id;
+                checkbox.classList.add('item-checkbox');
+                const label = document.createElement('label');
+                label.htmlFor = item.checkId;
+                label.textContent = item.name;
+                const qtyInput = document.createElement('input');
+                qtyInput.type = 'number';
+                qtyInput.min = 1;
+                qtyInput.value = 1;
+                qtyInput.id = item.qtyId;
+                qtyInput.classList.add('quantity-input');
+                qtyInput.dataset.id = item.id;
+                qtyInput.style.display = 'none';
+                checkbox.addEventListener('change', () => {
+                    qtyInput.style.display = checkbox.checked ? 'inline-block' : 'none';
+                    updatePreviewImage();
+                    calculateQuote();
+                });
+                qtyInput.addEventListener('input', calculateQuote);
+                labelWrapper.appendChild(checkbox);
+                labelWrapper.appendChild(label);
+                itemDiv.appendChild(labelWrapper);
+                itemDiv.appendChild(qtyInput);
+                container.appendChild(itemDiv);
+            };
 
             if (productId === 'bufo') {
                 productColorSelect.innerHTML = '';
                 currentProductData.availableColors.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c.charAt(0).toUpperCase() + c.slice(1); productColorSelect.appendChild(o); });
                 productSizeSelect.innerHTML = '';
                 currentProductData.availableSizes.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; productSizeSelect.appendChild(o); });
-
                 const addOnSnapshot = await db.collection('addOns').get();
                 if (addOnOptionsDiv) addOnOptionsDiv.innerHTML = '';
-                
                 addOnSnapshot.forEach(doc => {
                     availableAddOns[doc.id] = doc.data();
-                    const addOn = doc.data();
-                    
-                    const itemDiv = document.createElement('div');
-                    itemDiv.classList.add('config-item-row'); // Use generic class
-
-                    const labelWrapper = document.createElement('div');
-                    labelWrapper.classList.add('label-wrapper'); // Use generic class
-
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.id = `addon-check-${doc.id}`;
-                    checkbox.dataset.addonId = doc.id;
-                    checkbox.classList.add('item-checkbox'); // Use generic class
-                    
-                    const label = document.createElement('label');
-                    label.htmlFor = checkbox.id;
-                    label.textContent = addOn.name;
-
-                    const qtyInput = document.createElement('input');
-                    qtyInput.type = 'number';
-                    qtyInput.min = 1;
-                    qtyInput.value = 1;
-                    qtyInput.id = `qty-addon-${doc.id}`;
-                    qtyInput.classList.add('quantity-input'); // Use generic class
-                    qtyInput.dataset.addonId = doc.id;
-                    qtyInput.style.display = 'none';
-
-                    checkbox.addEventListener('change', () => {
-                        qtyInput.style.display = checkbox.checked ? 'inline-block' : 'none';
-                        updatePreviewImage();
-                        calculateQuote();
-                    });
-                    qtyInput.addEventListener('input', calculateQuote);
-
-                    labelWrapper.appendChild(checkbox);
-                    labelWrapper.appendChild(label);
-                    itemDiv.appendChild(labelWrapper);
-                    itemDiv.appendChild(qtyInput);
-                    if (addOnOptionsDiv) addOnOptionsDiv.appendChild(itemDiv);
+                    createConfigRow(addOnOptionsDiv, { id: doc.id, name: doc.data().name, checkId: `addon-check-${doc.id}`, qtyId: `qty-addon-${doc.id}` });
                 });
-
             } else if (productId === 'cartoon-charm') {
                 if (typeQuantitiesList) {
                     typeQuantitiesList.innerHTML = '';
                     currentProductData.availableTypes.forEach(type => {
-                        const itemDiv = document.createElement('div');
-                        itemDiv.classList.add('config-item-row'); // Use generic class
-                        const labelWrapper = document.createElement('div');
-                        labelWrapper.classList.add('label-wrapper'); // Use generic class
-                        const checkbox = document.createElement('input');
-                        checkbox.type = 'checkbox';
-                        checkbox.id = `type-check-${type.replace(/\s+/g, '-')}`;
-                        checkbox.dataset.type = type;
-                        checkbox.classList.add('item-checkbox'); // Use generic class
-                        const label = document.createElement('label');
-                        label.htmlFor = checkbox.id;
-                        label.textContent = type;
-                        const qtyInput = document.createElement('input');
-                        qtyInput.type = 'number';
-                        qtyInput.min = 1;
-                        qtyInput.value = 1;
-                        qtyInput.id = `qty-type-${type.replace(/\s+/g, '-')}`;
-                        qtyInput.classList.add('quantity-input'); // Use generic class
-                        qtyInput.dataset.type = type;
-                        qtyInput.style.display = 'none';
-                        checkbox.addEventListener('change', () => {
-                            qtyInput.style.display = checkbox.checked ? 'inline-block' : 'none';
-                            updatePreviewImage();
-                            calculateQuote();
-                        });
-                        qtyInput.addEventListener('input', calculateQuote);
-                        labelWrapper.appendChild(checkbox);
-                        labelWrapper.appendChild(label);
-                        itemDiv.appendChild(labelWrapper);
-                        itemDiv.appendChild(qtyInput);
-                        typeQuantitiesList.appendChild(itemDiv);
+                        createConfigRow(typeQuantitiesList, { id: type, name: type, checkId: `type-check-${type.replace(/\s+/g, '-')}`, qtyId: `qty-type-${type.replace(/\s+/g, '-')}` });
                     });
                 }
                 if (designFeeSpan && typeof currentProductData.designFee === 'number') {
+                    const feePara = designFeeSpan.parentElement;
+                    if(feePara) feePara.style.display = 'block';
                     designFeeSpan.textContent = currentProductData.designFee.toFixed(2);
                 }
             }
@@ -157,27 +133,22 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) { console.error("Error loading config data:", error); }
     }
 
-    // --- Calculation Logic (CORRECTED) ---
+    // --- Calculation Logic ---
     function calculateQuote() {
         if (!currentProductData) return;
         const productId = currentProductIdInput.value;
-        let totalCost = 0;
-        let totalMaterial = 0;
-        let totalTime = 0;
-
+        let totalCost = 0, totalMaterial = 0, totalTime = 0;
         if (productId === 'bufo') {
             const quantity = parseInt(productQuantityInput.value) || 1;
             const selectedSize = productSizeSelect.value;
             const sizeMultiplier = currentProductData.sizeMultipliers[selectedSize] || 1.0;
-            let baseBufoCost = currentProductData.basePrice * sizeMultiplier;
-            totalCost = baseBufoCost * quantity;
+            totalCost = (currentProductData.basePrice * sizeMultiplier) * quantity;
             totalMaterial = (currentProductData.defaultMaterialGrams || 0) * sizeMultiplier * quantity;
             totalTime = (currentProductData.defaultPrintTimeMinutes || 0) * sizeMultiplier * quantity;
-            
             document.querySelectorAll('#addOnOptions .item-checkbox:checked').forEach(checkbox => {
-                const addOnId = checkbox.dataset.addonId;
+                const addOnId = checkbox.dataset.id;
                 const addOnData = availableAddOns[addOnId];
-                const addOnQtyInput = document.querySelector(`.quantity-input[data-addon-id="${addOnId}"]`);
+                const addOnQtyInput = document.querySelector(`.quantity-input[data-id="${addOnId}"]`);
                 const addOnQty = parseInt(addOnQtyInput.value) || 0;
                 if (addOnData && addOnQty > 0) {
                     totalCost += (addOnData.price || 0) * addOnQty;
@@ -188,8 +159,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (productId === 'cartoon-charm') {
             let totalItems = 0;
             document.querySelectorAll('#typeQuantitiesList .item-checkbox:checked').forEach(checkbox => {
-                const type = checkbox.dataset.type;
-                const qtyInput = document.querySelector(`.quantity-input[data-type="${type}"]`);
+                const type = checkbox.dataset.id;
+                const qtyInput = document.querySelector(`.quantity-input[data-id="${type}"]`);
                 const quantity = parseInt(qtyInput.value) || 0;
                 if (quantity > 0) {
                     totalItems += quantity;
@@ -205,7 +176,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 totalCost += currentProductData.designFee;
             }
         }
-        
         if(materialUsageSpan) materialUsageSpan.textContent = totalMaterial.toFixed(2);
         if(printTimeSpan) printTimeSpan.textContent = totalTime.toFixed(0);
         if(estimatedCostSpan) estimatedCostSpan.textContent = totalCost.toFixed(2);
@@ -215,51 +185,103 @@ document.addEventListener('DOMContentLoaded', () => {
     function setupEventListeners() {
         if (saveQuoteBtn) saveQuoteBtn.addEventListener('click', saveQuote);
         if (myQuotesList) myQuotesList.addEventListener('click', handleQuoteAction);
-        if (openOrderModalBtn) openOrderModalBtn.addEventListener('click', () => { orderModal.style.display = 'flex'; });
-        if (closeModalBtn) closeModalBtn.addEventListener('click', () => { orderModal.style.display = 'none'; });
+        if (openOrderModalBtn) openOrderModalBtn.addEventListener('click', () => { if(orderModal) orderModal.style.display = 'flex'; });
+        if (closeModalBtn) closeModalBtn.addEventListener('click', () => { if(orderModal) orderModal.style.display = 'none'; });
         window.addEventListener('click', (event) => { if (event.target === orderModal) { orderModal.style.display = 'none'; } });
         if (orderForm) orderForm.addEventListener('submit', handleOrderSubmit);
         if (productQuantityInput) productQuantityInput.addEventListener('input', calculateQuote);
         if (productColorSelect) { productColorSelect.addEventListener('change', () => { updatePreviewImage(); calculateQuote(); }); }
         if (productSizeSelect) { productSizeSelect.addEventListener('change', calculateQuote); }
+        if (photoUploadInput) { photoUploadInput.addEventListener('change', handleFileSelection); }
     }
-
-    // --- Image Update Logic (CORRECTED) ---
+    
+    // --- Image Update Logic ---
     function updatePreviewImage() {
         if (!currentProductData) return;
         const productId = currentProductIdInput.value;
-
         if (productId === 'bufo') {
             if (!productColorSelect || !currentProductData.imageMap) return;
             const selectedColor = productColorSelect.value;
             const firstCheckedAddon = document.querySelector('#addOnOptions .item-checkbox:checked');
-            const addOnId = firstCheckedAddon ? firstCheckedAddon.dataset.addonId : 'none';
+            const addOnId = firstCheckedAddon ? firstCheckedAddon.dataset.id : 'none';
             const affectsImageKey = availableAddOns[addOnId]?.affectsImageKey;
-            
             const imageKey = affectsImageKey ? `${affectsImageKey}` : 'plain_green';
             productImage.src = currentProductData.imageMap[imageKey] || currentProductData.imageMap['plain_green'] || 'placeholder.jpg';
-        
         } else if (productId === 'cartoon-charm') {
             const firstCheckedType = document.querySelector('#typeQuantitiesList .item-checkbox:checked');
             if (firstCheckedType) {
-                const type = firstCheckedType.dataset.type;
+                const type = firstCheckedType.dataset.id;
                 const imageUrl = currentProductData.typeDetails[type]?.imageUrl;
                 if (imageUrl) productImage.src = imageUrl;
             } else {
-                productImage.src = currentProductData.defaultImage;
+                if(currentProductData.defaultImage) productImage.src = currentProductData.defaultImage;
             }
         }
     }
+    
+    // --- File Upload Handling ---
+    function handleFileSelection(event) {
+        const files = event.target.files;
+        if (!files.length) { if(fileNameDisplay) fileNameDisplay.textContent = 'No file chosen'; return; }
+        if (files.length > 5) { alert("You can upload a maximum of 5 files."); photoUploadInput.value = ''; if(fileNameDisplay) fileNameDisplay.textContent = 'No file chosen'; return; }
+        if(fileNameDisplay) fileNameDisplay.textContent = files.length === 1 ? files[0].name : `${files.length} files selected`;
+        if(filePreviewContainer) filePreviewContainer.innerHTML = '';
+        uploadedImageUrls = [];
+        isUploading = true;
+        const submitBtn = orderForm.querySelector('button[type="submit"]');
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Uploading...'; }
+        const uploadPromises = Array.from(files).map(file => {
+            const fileId = `file-${Math.random().toString(36).substr(2, 9)}`;
+            const previewEl = document.createElement('div');
+            previewEl.classList.add('file-preview-item');
+            previewEl.id = fileId;
+            previewEl.innerHTML = `<span class="file-name">${file.name}</span><span class="file-status">Uploading (0%)...</span>`;
+            if(filePreviewContainer) filePreviewContainer.appendChild(previewEl);
+            return uploadFile(file, fileId);
+        });
+        Promise.all(uploadPromises).then(() => {
+            isUploading = false;
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'LGTM! Order it!'; }
+        }).catch(error => {
+            isUploading = false;
+            alert("An error occurred during file upload. Please try again.");
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'LGTM! Order it!'; }
+        });
+    }
 
-    // ==========================================================
-    //  START: Corrected Save Quote Function
-    // ==========================================================
+    function uploadFile(file, elementId) {
+        return new Promise((resolve, reject) => {
+            const user = firebase.auth().currentUser;
+            if (!user) { alert("Please log in to upload photos."); return reject("User not logged in"); }
+            const filePath = `uploads/${user.uid}/${Date.now()}-${file.name}`;
+            const storageRef = storage.ref(filePath);
+            const uploadTask = storageRef.put(file);
+            uploadTask.on('state_changed', 
+                (snapshot) => {
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    const statusEl = document.querySelector(`#${elementId} .file-status`);
+                    if (statusEl) statusEl.textContent = `Uploading (${Math.round(progress)}%)...`;
+                }, (error) => {
+                    const statusEl = document.querySelector(`#${elementId} .file-status`);
+                    if (statusEl) statusEl.textContent = 'Upload Failed!';
+                    reject(error);
+                }, () => {
+                    uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
+                        const statusEl = document.querySelector(`#${elementId} .file-status`);
+                        if (statusEl) statusEl.textContent = 'Uploaded ✔';
+                        uploadedImageUrls.push(downloadURL);
+                        resolve(downloadURL);
+                    });
+                }
+            );
+        });
+    }
+
+    // --- Save Quote Logic ---
     async function saveQuote() {
         const user = auth.currentUser;
         if (!user) { alert("You must be logged in to save a quote."); return; }
         const productId = currentProductIdInput.value;
-        
-        // This object will be populated with data to save
         let quoteData = {
             userId: user.uid,
             productId: productId,
@@ -267,33 +289,27 @@ document.addEventListener('DOMContentLoaded', () => {
             totalCost: parseFloat(estimatedCostSpan.textContent),
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         };
-        
         if (productId === 'bufo') {
             const selectedAddOns = [];
-            // Correctly query for checked add-on checkboxes
             document.querySelectorAll('#addOnOptions .item-checkbox:checked').forEach(checkbox => {
-                const addOnId = checkbox.dataset.addonId;
-                const qtyInput = document.querySelector(`.quantity-input[data-addon-id="${addOnId}"]`);
+                const addOnId = checkbox.dataset.id;
+                const qtyInput = document.querySelector(`.quantity-input[data-id="${addOnId}"]`);
                 selectedAddOns.push({ id: addOnId, quantity: parseInt(qtyInput.value) || 1 });
             });
             quoteData.color = productColorSelect.value;
             quoteData.size = productSizeSelect.value;
             quoteData.quantity = parseInt(productQuantityInput.value, 10);
-            quoteData.selectedAddOns = selectedAddOns; // Save the array of add-ons
+            quoteData.selectedAddOns = selectedAddOns;
         } else if (productId === 'cartoon-charm') {
             const items = [];
-            document.querySelectorAll('#typeQuantitiesList .quantity-input').forEach(input => {
-                const quantity = parseInt(input.value) || 0;
-                // Only save if the checkbox is checked (meaning the quantity input is visible)
-                const checkbox = document.getElementById(`type-check-${input.dataset.type.replace(/\s+/g, '-')}`);
-                if (quantity > 0 && checkbox.checked) {
-                    items.push({ type: input.dataset.type, quantity: quantity });
-                }
+            document.querySelectorAll('#typeQuantitiesList .item-checkbox:checked').forEach(checkbox => {
+                const type = checkbox.dataset.id;
+                const qtyInput = document.querySelector(`.quantity-input[data-id="${type}"]`);
+                items.push({ type: type, quantity: parseInt(qtyInput.value) || 1 });
             });
-            if (items.length === 0) { alert("Please select a quantity for at least one item to save a quote."); return; }
+            if (items.length === 0) { alert("Please select at least one item type to save a quote."); return; }
             quoteData.items = items;
         }
-
         try {
             await db.collection('quotes').add(quoteData);
             alert("Quote saved successfully!");
@@ -301,62 +317,32 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) { console.error("Error saving quote: ", error); alert("Error saving quote."); }
     }
     
-    // ==========================================================
-    //  START: Corrected Load Saved Quotes Function
-    // ==========================================================
+    // --- Load Saved Quotes ---
     async function loadSavedQuotes(userId) {
         const productId = currentProductIdInput.value;
-        if (!myQuotesList) return; // Exit if the quote list isn't on the page
-
+        if(!myQuotesList) return;
         myQuotesList.innerHTML = '<li>Loading history...</li>';
         try {
-            const snapshot = await db.collection('quotes')
-                .where('userId', '==', userId)
-                .where('productId', '==', productId)
-                .orderBy('timestamp', 'desc')
-                .get();
-
+            const snapshot = await db.collection('quotes').where('userId', '==', userId).where('productId', '==', productId).orderBy('timestamp', 'desc').get();
             myQuotesList.innerHTML = '';
-            if (snapshot.empty) {
-                myQuotesList.innerHTML = `<li>You have no saved quotes for this product.</li>`;
-                return;
-            }
-
+            if (snapshot.empty) { myQuotesList.innerHTML = `<li>You have no saved quotes for this product.</li>`; return; }
             snapshot.forEach(doc => {
                 const quote = doc.data();
                 const li = document.createElement('li');
                 const detailsDiv = document.createElement('div');
                 detailsDiv.classList.add('quote-details');
-                
                 let dateTimeDisplay = 'N/A';
-                if (quote.timestamp) {
-                    const date = new Date(quote.timestamp.toDate());
-                    const timeOptions = { hour: 'numeric', minute: '2-digit' };
-                    dateTimeDisplay = `${date.toLocaleDateString()} at ${date.toLocaleTimeString([], timeOptions)}`;
-                }
-                
+                if (quote.timestamp) { const date = new Date(quote.timestamp.toDate()); const timeOptions = { hour: 'numeric', minute: '2-digit' }; dateTimeDisplay = `${date.toLocaleDateString()} at ${date.toLocaleTimeString([], timeOptions)}`; }
                 let detailsHtml = `<strong>${quote.productName} - $${quote.totalCost.toFixed(2)}</strong><br>`;
-
                 if (quote.productId === 'bufo') {
-                    // --- THIS IS THE CORRECTED LOGIC ---
-                    let addOnsText = 'None';
-                    // Check if selectedAddOns exists and has items
-                    if (quote.selectedAddOns && quote.selectedAddOns.length > 0) {
-                        addOnsText = quote.selectedAddOns.map(item => {
-                            // Look up the name from the globally available object
-                            const addOnName = availableAddOns[item.id]?.name || item.id; // Fallback to ID if name not found
-                            return `${addOnName} (x${item.quantity})`;
-                        }).join(', ');
-                    }
+                    const addOnsText = quote.selectedAddOns?.map(item => `${availableAddOns[item.id]?.name || item.id} (x${item.quantity})`).join(', ') || 'None';
                     detailsHtml += `<small>Color: ${quote.color}, Size: ${quote.size}, Qty: ${quote.quantity}</small><br><small>Add-Ons: ${addOnsText}</small><br>`;
                 } else if (productId === 'cartoon-charm') {
-                    const itemsText = quote.items.map(item => `${item.type} (x${item.quantity})`).join(', ');
+                    const itemsText = quote.items?.map(item => `${item.type} (x${item.quantity})`).join(', ') || 'None';
                     detailsHtml += `<small>Items: ${itemsText}</small><br>`;
                 }
-
                 detailsHtml += `<small>Saved on: ${dateTimeDisplay}</small>`;
                 detailsDiv.innerHTML = detailsHtml;
-
                 const actionsDiv = document.createElement('div');
                 actionsDiv.classList.add('quote-actions');
                 const orderBtn = document.createElement('button');
@@ -373,14 +359,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 li.appendChild(actionsDiv);
                 myQuotesList.appendChild(li);
             });
-        } catch (error) {
-            console.error("Error loading saved quotes:", error);
-            myQuotesList.innerHTML = '<li>Error loading history. Check console for details.</li>';
-        }
+        } catch (error) { console.error("Error loading saved quotes:", error); myQuotesList.innerHTML = '<li>Error loading history. Check console for details.</li>'; }
     }
-    // ========================================================
-    //  END: Corrected Load Saved Quotes Function
-    // ========================================================
     
     // --- Action Handlers and Form Population ---
     function handleQuoteAction(event) {
@@ -410,11 +390,11 @@ document.addEventListener('DOMContentLoaded', () => {
             productColorSelect.value = quote.color;
             productSizeSelect.value = quote.size;
             productQuantityInput.value = quote.quantity;
-            document.querySelectorAll('.addon-checkbox').forEach(cb => cb.checked = false);
-            document.querySelectorAll('.addon-quantity-input').forEach(inp => inp.style.display = 'none');
+            document.querySelectorAll('#addOnOptions .item-checkbox').forEach(cb => cb.checked = false);
+            document.querySelectorAll('#addOnOptions .quantity-input').forEach(inp => inp.style.display = 'none');
             quote.selectedAddOns?.forEach(item => {
                 const checkbox = document.getElementById(`addon-check-${item.id}`);
-                const qtyInput = document.querySelector(`.addon-quantity-input[data-addon-id="${item.id}"]`);
+                const qtyInput = document.querySelector(`.quantity-input[data-id="${item.id}"]`);
                 if (checkbox && qtyInput) {
                     checkbox.checked = true;
                     qtyInput.value = item.quantity;
@@ -422,10 +402,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         } else if (productId === 'cartoon-charm') {
-            document.querySelectorAll('.type-quantity-input').forEach(input => input.value = 0);
-            quote.items.forEach(item => {
-                const input = document.getElementById(`qty-${item.type.replace(/\s+/g, '-')}`);
-                if (input) { input.value = item.quantity; }
+            document.querySelectorAll('#typeQuantitiesList .item-checkbox').forEach(cb => cb.checked = false);
+            document.querySelectorAll('#typeQuantitiesList .quantity-input').forEach(inp => { inp.value = 0; inp.style.display = 'none'; });
+            quote.items?.forEach(item => {
+                const checkbox = document.getElementById(`type-check-${item.type.replace(/\s+/g, '-')}`);
+                const qtyInput = document.querySelector(`.quantity-input[data-id="${item.type}"]`);
+                if (checkbox && qtyInput) {
+                    checkbox.checked = true;
+                    qtyInput.value = item.quantity;
+                    qtyInput.style.display = 'inline-block';
+                }
             });
         }
         calculateQuote();
@@ -433,25 +419,28 @@ document.addEventListener('DOMContentLoaded', () => {
         orderModal.style.display = 'flex';
     }
     
-  // ==========================================================
-    //  START: Updated Order Submission Function
-    // ==========================================================
+    // --- Order Submission ---
     async function handleOrderSubmit(e) {
         e.preventDefault();
+        
         const submitBtn = e.target.querySelector('button[type="submit"]');
+        
+        if (isUploading) { alert("Please wait for photos to finish uploading."); return; }
+        const productId = currentProductIdInput.value;
+        if (productId === 'cartoon-charm' && uploadedImageUrls.length === 0) { alert("Please upload at least one photo for your order."); return; }
+        
         submitBtn.disabled = true;
         submitBtn.textContent = 'Submitting...';
+        
         if (!auth.currentUser) {
             alert("Please log in to place an order.");
             submitBtn.disabled = false;
             submitBtn.textContent = 'LGTM! Order it!';
             return;
         }
+        
         calculateQuote();
-        const productId = currentProductIdInput.value;
         let orderDetailsString = '';
-
-        // --- 1. Build the Order Data Object ---
         let orderData = {
             productId: productId,
             productName: currentProductData.name,
@@ -466,44 +455,42 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (productId === 'bufo') {
             const selectedAddOns = [];
-            document.querySelectorAll('.addon-checkbox:checked').forEach(checkbox => {
-                const addOnId = checkbox.dataset.addonId;
-                const qtyInput = document.querySelector(`.addon-quantity-input[data-addon-id="${addOnId}"]`);
+            document.querySelectorAll('#addOnOptions .item-checkbox:checked').forEach(checkbox => {
+                const addOnId = checkbox.dataset.id;
+                const qtyInput = document.querySelector(`.quantity-input[data-id="${addOnId}"]`);
                 selectedAddOns.push({ id: addOnId, quantity: parseInt(qtyInput.value) || 1 });
             });
             orderData.selectedColor = productColorSelect.value;
             orderData.selectedSize = productSizeSelect.value;
             orderData.quantity = parseInt(productQuantityInput.value);
             orderData.selectedAddOns = selectedAddOns;
-
-            // --- UPDATED: More detailed email string for Bufo ---
+            
             const addOnsText = selectedAddOns.map(item => {
                 const addOnPrice = availableAddOns[item.id]?.price || 0;
                 const lineItemTotal = addOnPrice * item.quantity;
                 return `${availableAddOns[item.id]?.name} (x${item.quantity}) - $${lineItemTotal.toFixed(2)}`;
             }).join('\n                ');
             const baseBufoPrice = (currentProductData.basePrice * currentProductData.sizeMultipliers[orderData.selectedSize]) * orderData.quantity;
-
             orderDetailsString = `
                 Product: ${orderData.productName}
                 - Color: ${orderData.selectedColor}
                 - Size: ${orderData.selectedSize}
                 - Quantity: ${orderData.quantity}
                 - Base Price: $${baseBufoPrice.toFixed(2)}
-
                 Add-Ons:
                 ${addOnsText || 'None'}
             `;
         } else if (productId === 'cartoon-charm') {
             const items = [];
-            document.querySelectorAll('.type-quantity-input').forEach(input => {
-                const quantity = parseInt(input.value) || 0;
-                if (quantity > 0) { items.push({ type: input.dataset.type, quantity: quantity }); }
+            document.querySelectorAll('#typeQuantitiesList .item-checkbox:checked').forEach(checkbox => {
+                const type = checkbox.dataset.id;
+                const qtyInput = document.querySelector(`.quantity-input[data-id="${type}"]`);
+                const quantity = parseInt(qtyInput.value) || 0;
+                if(quantity > 0) { items.push({ type: type, quantity: quantity }); }
             });
             orderData.items = items;
             orderData.designFee = currentProductData.designFee;
 
-            // --- UPDATED: More detailed email string for Cartoon Charm ---
             const itemsText = items.map(item => {
                 const itemPrice = currentProductData.typeDetails[item.type].price;
                 const lineItemTotal = itemPrice * item.quantity;
@@ -511,38 +498,50 @@ document.addEventListener('DOMContentLoaded', () => {
             }).join('\n                ');
             orderDetailsString = `
                 Product: ${orderData.productName}
-
                 Items:
-                ${itemsText}
+                ${itemsText || 'None'}
                 --------------------
                 Design Fee: $${orderData.designFee.toFixed(2)}
             `;
         }
         
-        // --- 2. Save to Firestore and Send Email ---
+        if (productId === 'cartoon-charm') {
+            orderData.photoUrls = uploadedImageUrls;
+        }
+        
         try {
             await db.collection('orders').add(orderData);
+            
+            let photoLinksHtml = '';
+            if (orderData.photoUrls && orderData.photoUrls.length > 0) {
+                photoLinksHtml = '<strong>Uploaded Photo Links:</strong><br>' + orderData.photoUrls.map(url => `<a href="${url}" target="_blank">${url}</a>`).join('<br>');
+            }
             
             const templateParams = {
                 customer_name: orderData.customerName,
                 customer_email: orderData.customerEmail,
                 order_details: orderDetailsString,
                 total_cost: orderData.totalEstimatedCost.toFixed(2),
-                notes: orderData.notes || 'No notes provided.'
+                notes: orderData.notes || 'No notes provided.',
+                photo_links: photoLinksHtml,
             };
             
             await emailjs.send('service_rnwve4f', 'template_5ep9p7i', templateParams);
-
             alert("Order placed successfully! We'll be in touch soon.");
-            orderForm.reset();
-            orderModal.style.display = 'none';
+            
+            if(orderForm) orderForm.reset();
+            if(filePreviewContainer) filePreviewContainer.innerHTML = '';
+            uploadedImageUrls = [];
+            if(orderModal) orderModal.style.display = 'none';
 
         } catch (error) {
             console.error("Error placing order or sending email: ", error);
-            alert("Failed to place order. Please try again.");
+            alert("Failed to place order.");
         } finally {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'LGTM! Order it!';
+            if(submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'LGTM! Order it!';
+            }
         }
     }
 

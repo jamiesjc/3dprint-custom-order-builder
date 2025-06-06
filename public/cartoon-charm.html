@@ -25,9 +25,18 @@
                 <input type="hidden" id="currentProductId" value="cartoon-charm">
 
                 <div id="uploadSection">
-                    <label for="photoUpload">1. Upload Your Photo:</label>
-                    <input type="file" id="photoUpload" accept="image/*" required>
-                    <small>We'll turn this image into a cartoon illustration for all items below!</small>
+                    <label class="section-label">1. Upload 3-5 Photos:</label>
+                    
+                    <div class="custom-file-upload">
+                        <label for="photoUpload" class="file-upload-button">Choose Files</label>
+                        <span id="fileNameDisplay">No files chosen</span>
+                    </div>
+                    
+                    <input type="file" id="photoUpload" accept="image/*" required multiple>
+                    
+                    <small>We'll use these images to create your cartoon illustration!</small>
+                    
+                    <div id="filePreviewContainer"></div>
                 </div>
 
                 <div id="typeQuantitiesSection">
@@ -42,7 +51,7 @@
             <h2>Quote Summary</h2>
             <p>Estimated Material: <span id="materialUsage">0</span> grams</p>
             <p>Estimated Print Time: <span id="printTime">0</span> minutes</p>
-            <p><strong>Design Fee:</strong> $<span id="designFee">0.00</span></p>
+            <p>Design Fee: $<span id="designFee">0.00</span></p>
             <p><strong>Total Cost:</strong> $<span id="estimatedCost">0.00</span></p>
 
             <div class="action-buttons-container">
@@ -75,6 +84,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
     <script src="firebase-config.js"></script>
     <script src="app.js"></script>
 </body>
