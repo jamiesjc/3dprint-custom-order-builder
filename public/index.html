@@ -39,8 +39,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="firebase-config.js"></script>
     <script>
-        // This JavaScript does not need to be changed.
-        // It will work perfectly with the new HTML structure.
         const authStatusSpan = document.getElementById('authStatus');
         const authEmailInput = document.getElementById('authEmail');
         const authPasswordInput = document.getElementById('authPassword');
@@ -76,13 +74,27 @@
             try {
                 const snapshot = await db.collection('products').get();
                 if (snapshot.empty) { productListings.innerHTML = '<p>No products available yet.</p>'; return; }
+                
                 snapshot.forEach(doc => {
                     const product = doc.data();
                     const productId = doc.id;
                     const productCard = document.createElement('a');
                     productCard.href = `${productId}.html`;
                     productCard.classList.add('product-card');
-                    const defaultImageUrl = product.imageMap && product.imageMap[`plain_${product.availableColors[0]}`] ? product.imageMap[`plain_${product.availableColors[0]}`] : 'placeholder.jpg';
+
+                    // ===============================================
+                    //  START: Corrected Image Logic
+                    // ===============================================
+                    let defaultImageUrl = 'placeholder.jpg'; // Set a fallback
+
+                    if (product.defaultImage) {
+                        // This handles products like "Custom Cartoon Charm"
+                        defaultImageUrl = product.defaultImage;
+                    } 
+                    // ===============================================
+                    //  END: Corrected Image Logic
+                    // ===============================================
+
                     productCard.innerHTML = `<img src="${defaultImageUrl}" alt="${product.name}"><h3>${product.name}</h3><p>${product.description}</p>`;
                     productListings.appendChild(productCard);
                 });

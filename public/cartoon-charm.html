@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configure Your Custom Cartoon Charm</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>Configure Your Custom Cartoon Charm</h1>
+        <nav>
+            <a href="index.html" class="back-button">Back to Products</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="configurator-section">
+            <div class="product-image-display">
+                <img id="productImage" src="placeholder.jpg" alt="Custom Cartoon Charm">
+            </div>
+            <div class="controls">
+                <h2>Your Customization</h2>
+
+                <input type="hidden" id="currentProductId" value="cartoon-charm">
+
+                <div id="uploadSection">
+                    <label for="photoUpload">1. Upload Your Photo:</label>
+                    <input type="file" id="photoUpload" accept="image/*" required>
+                    <small>We'll turn this image into a cartoon illustration for all items below!</small>
+                </div>
+
+                <div id="typeQuantitiesSection">
+                    <label>2. Choose Product Type and Quantity:</label>
+                    <div id="typeQuantitiesList">
+                        </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="results-section">
+            <h2>Quote Summary</h2>
+            <p>Estimated Material: <span id="materialUsage">0</span> grams</p>
+            <p>Estimated Print Time: <span id="printTime">0</span> minutes</p>
+            <p><strong>Design Fee:</strong> $<span id="designFee">0.00</span></p>
+            <p><strong>Total Cost:</strong> $<span id="estimatedCost">0.00</span></p>
+
+            <div class="action-buttons-container">
+                <button id="saveQuoteBtn" style="display: none;">Save Quote</button>
+                <button id="openOrderModalBtn" style="display: none;">Order</button>
+            </div>
+            
+            <section class="my-quotes-section" id="my-quotes-section" style="display: none;">
+                <h2>Quote History</h2>
+                <ul id="myQuotesList"></ul>
+            </section>
+        </section>
+
+    </main>
+
+    <div id="orderModal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <form id="orderForm">
+                <h3>Your Details</h3>
+                <input type="text" id="customerName" placeholder="Your Name" required>
+                <input type="email" id="customerEmail" placeholder="Your Email" required>
+                <textarea id="quoteNotes" placeholder="Any notes? (Optional)"></textarea>
+                <button type="submit" id="submitOrderBtn">LGTM! Order it!</button>
+            </form>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
