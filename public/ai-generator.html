@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 3D Product Generator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>AI 3D Product Generator</h1>
+        <nav>
+            <a href="index.html" class="back-button">Back to Products</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="configurator-section">
+            <div class="product-image-display">
+                <img id="productImage" src="placeholder.jpg" alt="AI Generated Preview">
+            </div>
+            <div class="controls">
+                <h2>Create Your Character</h2>
+                <input type="hidden" id="currentProductId" value="ai-generator">
+
+                <div class="ai-prompt-section">
+                    <label for="aiPromptText">1. Describe Your Character or Upload a Photo</label>
+                    <textarea id="aiPromptText" rows="3" placeholder="e.g., a happy Corgi wearing a superhero cape"></textarea>
+                    
+                    <button id="generatePreviewBtn">Generate 3D Product Preview</button>
+                    <div id="aiLoadingIndicator" style="display: none;">
+                        <div class="spinner"></div>
+                        <span>Generating your custom preview... (this may take a minute)</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="results-section">
+            <h2>Estimated Quote</h2>
+            <p>This is an initial estimate. The final price may vary based on complexity.</p>
+            <p><strong>Custom AI Add-On:</strong> $<span id="estimatedCost">0.00</span></p>
+
+            <button id="requestQuoteBtn" class="primary-action-btn" style="display: none;">Request Final Quote</button>
+        </section>
+    </main>
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-functions-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

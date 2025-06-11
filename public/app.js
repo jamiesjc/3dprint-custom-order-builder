@@ -26,6 +26,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const photoUploadInput = document.getElementById('photoUpload');
     const filePreviewContainer = document.getElementById('filePreviewContainer');
     const fileNameDisplay = document.getElementById('fileNameDisplay');
+    const aiPromptText = document.getElementById('aiPromptText');
+    const generatePreviewBtn = document.getElementById('generatePreviewBtn');
+    const aiLoadingIndicator = document.getElementById('aiLoadingIndicator');
+    const requestQuoteBtn = document.getElementById('requestQuoteBtn');
 
     // --- Firebase & State Variables ---
     const storage = firebase.storage();
@@ -42,22 +46,65 @@ document.addEventListener('DOMContentLoaded', () => {
         await loadConfigData();
         setupEventListeners();
         auth.onAuthStateChanged(user => {
-            if (user) {
-                saveQuoteBtn.style.display = 'block';
-                openOrderModalBtn.style.display = 'block';
-                if(myQuotesSection) myQuotesSection.style.display = 'block';
-                loadSavedQuotes(user.uid);
-                customerNameInput.value = user.displayName || '';
-                customerEmailInput.value = user.email || '';
+             if (user) {
+                // These buttons only exist on product pages, so check first.
+                if (saveQuoteBtn) saveQuoteBtn.style.display = 'block';
+                if (openOrderModalBtn) openOrderModalBtn.style.display = 'block';
+                if (myQuotesSection) myQuotesSection.style.display = 'block';
+
+                // Only load quotes if the quote list exists on the page
+                if (myQuotesList) loadSavedQuotes(user.uid);
+                
+                if (customerNameInput) customerNameInput.value = user.displayName || '';
+                if (customerEmailInput) customerEmailInput.value = user.email || '';
             } else {
-                saveQuoteBtn.style.display = 'none';
-                openOrderModalBtn.style.display = 'none';
-                if(myQuotesSection) myQuotesSection.style.display = 'none';
-                if(myQuotesList) myQuotesList.innerHTML = '';
-                customerNameInput.value = '';
-                customerEmailInput.value = '';
+                // Also check here before trying to hide elements
+                if (saveQuoteBtn) saveQuoteBtn.style.display = 'none';
+                if (openOrderModalBtn) openOrderModalBtn.style.display = 'none';
+                if (myQuotesSection) myQuotesSection.style.display = 'none';
+                if (myQuotesList) myQuotesList.innerHTML = '';
+                if (customerNameInput) customerNameInput.value = '';
+                if (customerEmailInput) customerEmailInput.value = '';
             }
         });
+    }
+
+    async function handleAiImageGeneration() {
+        const prompt = aiPromptText.value.trim();
+        if (!prompt) {
+            alert("Please describe the character you want to create.");
+            return;
+        }
+
+        aiLoadingIndicator.style.display = 'flex';
+        generatePreviewBtn.disabled = true;
+        generatePreviewBtn.textContent = 'Generating...';
+
+        try {
+            const user = firebase.auth().currentUser;
+            if (!user) {
+                throw new Error("You must be logged in to generate an image.");
+            }
+            console.log("User is authenticated, proceeding with function call.");
+            
+            const generateFunction = firebase.functions().httpsCallable('generateAiImage');
+            const result = await generateFunction({ prompt: prompt });
+            
+            const imageUrl = result.data.imageUrl;
+            if (imageUrl && productImage) {
+                productImage.src = imageUrl;
+                // Show the request quote button now that there's an image
+                if(requestQuoteBtn) requestQuoteBtn.style.display = 'block';
+            }
+
+        } catch (error) {
+            console.error("Error calling generateAiImage function:", error);
+            alert(`Error: ${error.message}`);
+        } finally {
+            aiLoadingIndicator.style.display = 'none';
+            generatePreviewBtn.disabled = false;
+            generatePreviewBtn.textContent = 'Generate 3D Product Preview';
+        }
     }
 
     // --- Load Product Data ---
@@ -175,7 +222,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (totalItems > 0 && typeof currentProductData.designFee === 'number') {
                 totalCost += currentProductData.designFee;
             }
+        } else if (currentProductIdInput.value === 'ai-generator') {
+            // Just set the fixed price from the database
+            const price = currentProductData?.basePrice || 0;
+            if (estimatedCostSpan) estimatedCostSpan.textContent = price.toFixed(2);
         }
+
         if(materialUsageSpan) materialUsageSpan.textContent = totalMaterial.toFixed(2);
         if(printTimeSpan) printTimeSpan.textContent = totalTime.toFixed(0);
         if(estimatedCostSpan) estimatedCostSpan.textContent = totalCost.toFixed(2);
@@ -193,6 +245,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (productColorSelect) { productColorSelect.addEventListener('change', () => { updatePreviewImage(); calculateQuote(); }); }
         if (productSizeSelect) { productSizeSelect.addEventListener('change', calculateQuote); }
         if (photoUploadInput) { photoUploadInput.addEventListener('change', handleFileSelection); }
+        if (generatePreviewBtn) {
+            generatePreviewBtn.addEventListener('click', handleAiImageGeneration);
+        }
+        if (requestQuoteBtn) {
+            requestQuoteBtn.addEventListener('click', () => {
+                // Here you would trigger logic to open a modal or send an email
+                // For now, let's just use the existing order modal
+                if (orderModal) orderModal.style.display = 'flex';
+            });
+        }
     }
     
     // --- Image Update Logic ---
@@ -502,6 +564,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${itemsText || 'None'}
                 --------------------
                 Design Fee: $${orderData.designFee.toFixed(2)}
+            `;
+        } else if (productId === 'ai-generator') {
+            orderData.prompt = aiPromptText.value;
+            orderData.generatedImageUrl = productImage.src; // Save the generated image URL with the order
+            orderDetailsString = `
+                Product: AI-Generated Custom Character
+                Prompt: ${orderData.prompt}
+                Generated Image: <a href="${orderData.generatedImageUrl}">View Image</a>
+                --------------------
+                Estimated Base Price: $${currentProductData.basePrice.toFixed(2)} (pending final quote)
             `;
         }
         

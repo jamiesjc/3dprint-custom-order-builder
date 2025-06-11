@@ -442,3 +442,34 @@ body.page-catalog {
     font-weight: bold;
     color: #6c757d;
 }
+
+/* --- AI Generator Page Styles --- */
+.ai-prompt-section textarea {
+    width: 100%;
+    padding: 10px;
+    font-size: 1rem;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    box-sizing: border-box;
+    margin: 8px 0;
+}
+
+#generatePreviewBtn, #requestQuoteBtn {
+    width: 100%;
+    padding: 12px 15px;
+    font-size: 16px;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+#generatePreviewBtn {
+    background-color: #9b59b6; /* Purple for AI actions */
+}
+
+#generatePreviewBtn:hover {
+    background-color: #8e44ad;
+}
+
+#requestQuoteBtn {
+    background-color: #007bff;
+}
