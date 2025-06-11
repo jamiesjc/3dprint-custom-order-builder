@@ -5,11 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3D Print Product Catalog</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* On screens wider than 768px, display two product cards per row */
+        @media (min-width: 768px) {
+            .page-catalog .product-list {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Make the main header title larger */
+        .page-catalog .header-content h1 {
+            font-size: 2rem; /* Increased from 1.75rem */
+            margin-bottom: 0;
+        }
+
+        /* Style for the new subtitle */
+        .page-catalog .header-subtitle {
+            margin: 5px 0 10px 0; /* Adjusted spacing for more room */
+            font-size: 1rem;
+            color: #ecf0f1;
+            opacity: 0.8;
+            font-weight: 300;
+        }
+    </style>
 </head>
 <body class="page-catalog">
     <header>
         <div class="container header-content">
-            <h1>CustomForge 3D</h1>
+            <div>
+                <h1>CustomForge 3D</h1>
+                <p class="header-subtitle">Your Imagination, 3D Printed.</p>
+            </div>
             <div class="auth-controls">
                 <span id="authStatus">Loading...</span>
                 <input type="email" id="authEmail" placeholder="Email">
@@ -34,10 +60,10 @@
         </div>
     </footer>
 
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     <script src="firebase-config.js"></script>
     <script>
         const authStatusSpan = document.getElementById('authStatus');
@@ -74,31 +100,50 @@
             productListings.innerHTML = '';
             try {
                 const snapshot = await db.collection('products').get();
-                if (snapshot.empty) { productListings.innerHTML = '<p>No products available yet.</p>'; return; }
-                
-                snapshot.forEach(doc => {
+                if (snapshot.empty) { 
+                    productListings.innerHTML = '<p>No products available yet.</p>'; 
+                    return; 
+                }
+
+                // --- START: NEW SORTING LOGIC ---
+
+                // 1. Define your desired order using the product IDs
+                const desiredOrder = ['bufo', 'cartoon-charm', 'team-swag', 'ai-generator'];
+
+                // 2. Convert the Firestore snapshot to a standard array
+                const productsArray = snapshot.docs;
+
+                // 3. Sort the array based on your defined order
+                productsArray.sort((a, b) => {
+                    const indexA = desiredOrder.indexOf(a.id);
+                    const indexB = desiredOrder.indexOf(b.id);
+
+                    // If a product isn't in the order list, push it to the end
+                    if (indexA === -1) return 1;
+                    if (indexB === -1) return -1;
+                    
+                    return indexA - indexB;
+                });
+
+                // 4. Loop through the *sorted* array to create the HTML
+                productsArray.forEach(doc => {
                     const product = doc.data();
                     const productId = doc.id;
                     const productCard = document.createElement('a');
                     productCard.href = `${productId}.html`;
                     productCard.classList.add('product-card');
 
-                    // ===============================================
-                    //  START: Corrected Image Logic
-                    // ===============================================
-                    let defaultImageUrl = 'placeholder.jpg'; // Set a fallback
-
+                    let defaultImageUrl = 'placeholder.jpg';
                     if (product.defaultImage) {
-                        // This handles products like "Custom Cartoon Charm"
                         defaultImageUrl = product.defaultImage;
                     } 
-                    // ===============================================
-                    //  END: Corrected Image Logic
-                    // ===============================================
 
                     productCard.innerHTML = `<img src="${defaultImageUrl}" alt="${product.name}"><h3>${product.name}</h3><p>${product.description}</p>`;
                     productListings.appendChild(productCard);
                 });
+                
+                // --- END: NEW SORTING LOGIC ---
+
             } catch (error) {
                 console.error("Error loading products: ", error);
                 productListings.innerHTML = '<p>Error loading products.</p>';

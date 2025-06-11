@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (addOnsListener) addOnsListener();
 
         productListener = db.collection('products').doc(productId).onSnapshot(productDoc => {
-            console.log("Product data updated in real-time.");
+            console.log("Product data updated in real-time for:", productId);
             if (!productDoc.exists) { return; }
 
             currentProductData = productDoc.data();
@@ -205,16 +205,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     calculateQuote();
                 });
 
-            } else if (productId === 'cartoon-charm') {
+            } else if (productId === 'cartoon-charm' || productId === 'team-swag') { // UPDATED: Logic now applies to both
                 if (typeQuantitiesList) {
-                    // =================================================================
-                    // --- NEW: Applying the Preserve/Restore logic to this section ---
-                    // =================================================================
-                    
-                    // Step 1: Preserve current selections
                     const preservedState = {};
                     typeQuantitiesList.querySelectorAll('.item-checkbox').forEach(checkbox => {
-                        const typeId = checkbox.dataset.id; // e.g., "Happy Face"
+                        const typeId = checkbox.dataset.id;
                         const qtyInput = document.querySelector(`.quantity-input[data-id="${typeId}"]`);
                         if (checkbox.checked && qtyInput) {
                             preservedState[typeId] = {
@@ -224,13 +219,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     });
 
-                    // Step 2: Redraw the list with fresh data
                     typeQuantitiesList.innerHTML = '';
                     currentProductData.availableTypes.forEach(type => {
                         const typeIdSafe = type.replace(/\s+/g, '-');
                         createConfigRow(typeQuantitiesList, { id: type, name: type, checkId: `type-check-${typeIdSafe}`, qtyId: `qty-type-${typeIdSafe}` });
                         
-                        // Step 3: Restore the selections
                         if (preservedState[type]) {
                             const newCheckbox = document.getElementById(`type-check-${typeIdSafe}`);
                             const newQtyInput = document.getElementById(`qty-type-${typeIdSafe}`);
@@ -287,7 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (quote.productId === 'bufo') {
                     const addOnsText = quote.selectedAddOns?.map(item => `${availableAddOns[item.id]?.name || item.id} (x${item.quantity})`).join(', ') || 'None';
                     detailsHtml += `<small>Color: ${quote.color}, Size: ${quote.size}, Qty: ${quote.quantity}</small><br><small>Add-Ons: ${addOnsText}</small><br>`;
-                } else if (productId === 'cartoon-charm') {
+                } else if (productId === 'cartoon-charm' || productId === 'team-swag') { // UPDATED: Also works for team-swag
                     const itemsText = quote.items?.map(item => `${item.type} (x${item.quantity})`).join(', ') || 'None';
                     detailsHtml += `<small>Items: ${itemsText}</small><br>`;
                 }
@@ -339,7 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     totalTime += (addOnData.printTimeMinutes || 0) * addOnQty;
                 }
             });
-        } else if (productId === 'cartoon-charm') {
+        } else if (productId === 'cartoon-charm' || productId === 'team-swag') { // UPDATED: Logic now applies to both
             let totalItems = 0;
             document.querySelectorAll('#typeQuantitiesList .item-checkbox:checked').forEach(checkbox => {
                 const type = checkbox.dataset.id;
@@ -400,7 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const affectsImageKey = availableAddOns[addOnId]?.affectsImageKey;
             const imageKey = affectsImageKey ? `${affectsImageKey}` : 'plain_green';
             if(productImage) productImage.src = currentProductData.imageMap[imageKey] || currentProductData.imageMap['plain_green'] || 'placeholder.jpg';
-        } else if (productId === 'cartoon-charm') {
+        } else if (productId === 'cartoon-charm' || productId === 'team-swag') { // UPDATED: Logic now applies to both
             const firstCheckedType = document.querySelector('#typeQuantitiesList .item-checkbox:checked');
             if (firstCheckedType) {
                 const type = firstCheckedType.dataset.id;
@@ -491,7 +484,7 @@ document.addEventListener('DOMContentLoaded', () => {
             quoteData.size = productSizeSelect.value;
             quoteData.quantity = parseInt(productQuantityInput.value, 10);
             quoteData.selectedAddOns = selectedAddOns;
-        } else if (productId === 'cartoon-charm') {
+        } else if (productId === 'cartoon-charm' || productId === 'team-swag') { // UPDATED: Logic now applies to both
             const items = [];
             document.querySelectorAll('#typeQuantitiesList .item-checkbox:checked').forEach(checkbox => {
                 const type = checkbox.dataset.id;
@@ -544,7 +537,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     qtyInput.style.display = 'inline-block';
                 }
             });
-        } else if (productId === 'cartoon-charm') {
+        } else if (productId === 'cartoon-charm' || productId === 'team-swag') { // UPDATED: Logic now applies to both
             document.querySelectorAll('#typeQuantitiesList .item-checkbox').forEach(cb => cb.checked = false);
             document.querySelectorAll('#typeQuantitiesList .quantity-input').forEach(inp => { inp.value = 0; inp.style.display = 'none'; });
             quote.items?.forEach(item => {
@@ -569,7 +562,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (isUploading) { alert("Please wait for photos to finish uploading."); return; }
         const productId = currentProductIdInput.value;
-        if (productId === 'cartoon-charm' && uploadedImageUrls.length === 0) { alert("Please upload at least one photo for your order."); return; }
+        if ((productId === 'cartoon-charm' || productId === 'team-swag') && uploadedImageUrls.length === 0) { // UPDATED
+            alert("Please upload at least one photo for your order."); 
+            return;
+        }
         
         submitBtn.disabled = true;
         submitBtn.textContent = 'Submitting...';
@@ -622,7 +618,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 Add-Ons:
                 ${addOnsText || 'None'}
             `;
-        } else if (productId === 'cartoon-charm') {
+        } else if (productId === 'cartoon-charm' || productId === 'team-swag') { // UPDATED: Logic now applies to both
             const items = [];
             document.querySelectorAll('#typeQuantitiesList .item-checkbox:checked').forEach(checkbox => {
                 const type = checkbox.dataset.id;
@@ -657,7 +653,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }
         
-        if (productId === 'cartoon-charm') {
+        if (productId === 'cartoon-charm' || productId === 'team-swag') { // UPDATED
             orderData.photoUrls = uploadedImageUrls;
         }
         

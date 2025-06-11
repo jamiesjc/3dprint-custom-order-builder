@@ -370,7 +370,7 @@ body.page-catalog {
 /* --- Custom File Upload Button Styles --- */
 
 /* This hides the original, ugly <input type="file"> */
-#uploadSection input[type="file"] {
+#uploadSection input[type="file"], .file-upload-area input[type="file"] {
     display: none;
 }
 
@@ -472,4 +472,177 @@ body.page-catalog {
 
 #requestQuoteBtn {
     background-color: #007bff;
+}
+
+/* =================================================================== */
+/* 3. MODERN PRODUCT PAGE LAYOUT (cartoon-charm, team-swag)
+/* NEW STYLES ADDED HERE
+/* =================================================================== */
+
+/* Use a class on the main element for product pages to scope these styles */
+main.product-page {
+    width: 100%;
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 0 20px;
+    box-sizing: border-box; 
+}
+
+.product-container {
+    display: flex;
+    flex-wrap: wrap; /* Allows stacking on smaller screens */
+    gap: 40px;
+}
+
+/* Left column for the image */
+.product-image-container {
+    flex: 1 1 40%; /* Flex-grow, flex-shrink, flex-basis */
+    min-width: 300px;
+    position: sticky; 
+    top: 20px;
+    align-self: flex-start;
+}
+
+.product-image-container .product-image {
+    width: 100%;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    background-color: #ffffff;
+    border: 1px solid #e9ecef;
+}
+
+/* Right column for the configuration options */
+.product-config-container {
+    flex: 1 1 55%;
+    min-width: 320px;
+}
+
+.product-config-container h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-top: 0;
+    margin-bottom: 8px;
+    color: #2c3e50;
+}
+
+.product-config-container > p { 
+    font-size: 1.1rem;
+    color: #555;
+    margin-bottom: 30px;
+    line-height: 1.6;
+}
+
+/* Styling for each step/section of the configuration */
+.config-section {
+    background-color: #ffffff;
+    padding: 25px;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    margin-bottom: 30px;
+}
+
+.config-section h3 {
+    font-size: 1.5rem;
+    margin-top: 0;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e9ecef;
+    margin-bottom: 20px;
+    color: #34495e;
+}
+
+.config-section > p {
+    color: #6c757d;
+    font-size: 0.95rem;
+    margin-top: -15px;
+    margin-bottom: 20px;
+}
+
+/* Enhanced File Upload Area Styling */
+.file-upload-area {
+    background-color: #f8f9fa;
+    border: 2px dashed #ced4da;
+    border-radius: 8px;
+    padding: 30px;
+    text-align: center;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.file-upload-area:hover {
+    border-color: var(--primary-color, #007bff);
+    background-color: #fff;
+}
+
+.file-upload-label {
+    background-color: var(--primary-color, #007bff);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+    font-size: 1rem;
+}
+
+.file-upload-label:hover {
+    background-color: #0056b3;
+}
+
+/* Quote Summary Section Specifics */
+.quote-summary .summary-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid #f1f3f5;
+    font-size: 1rem;
+    color: #495057;
+}
+
+.quote-summary .summary-item:last-child {
+    border-bottom: none;
+    font-weight: bold;
+}
+
+.quote-summary p {
+    margin: 0;
+}
+
+.quote-summary #estimatedCost {
+    font-weight: 700;
+    font-size: 1.75rem;
+    color: #28a745;
+}
+
+/* Action Buttons Container */
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.actions .button-primary,
+.actions .button-secondary {
+    flex: 1; /* Make buttons grow to fill space */
+    padding: 15px;
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+.button-primary {
+    background-color: var(--primary-color, #007bff);
+}
+.button-secondary {
+    background-color: #6c757d;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .product-container {
+        flex-direction: column;
+    }
+    .product-image-container {
+        position: static; /* Unstick the image on mobile */
+    }
+    .product-config-container h2 {
+        font-size: 2rem;
+    }
 }

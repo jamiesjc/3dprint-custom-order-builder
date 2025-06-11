@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configure Your Custom Team Swag</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>Custom Team Swag</h1>
+        <nav>
+            <a href="index.html" class="back-button">Back to Products</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="configurator-section">
+            <div class="product-image-display">
+                <img id="productImage" src="https://placehold.co/600x600/374151/FFFFFF?text=Team+Swag" alt="Custom Team Swag Preview">
+            </div>
+            <div class="controls">
+                <h2>Your Customization</h2>
+
+                <input type="hidden" id="currentProductId" value="team-swag">
+
+                <div id="uploadSection">
+                    <label class="section-label">1. Upload Your Design:</label>
+                    <div class="custom-file-upload">
+                        <label for="photoUpload" class="file-upload-button">Choose Files</label>
+                        <span id="fileNameDisplay">No files chosen</span>
+                    </div>
+                    <input type="file" id="photoUpload" accept="image/*" required multiple>
+                    <small>Upload one or more high-quality images of your logo or design. (Max 5 files)</small>
+                    <div id="filePreviewContainer"></div>
+                </div>
+
+                <div id="typeQuantitiesSection">
+                    <label class="section-label">2. Choose Your Products:</label>
+                    <p><small>Select the items you want to create with your design and specify quantities for each.</small></p>
+                    <div id="typeQuantitiesList">
+                        </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="results-section">
+            <h2>Quote Summary</h2>
+            <p>Estimated Material: <span id="materialUsage">0.00</span> grams</p>
+            <p>Estimated Print Time: <span id="printTime">0</span> minutes</p>
+            <p>Design Fee: $<span id="designFee">0.00</span></p>
+            <p><strong>Total Cost:</strong> $<span id="estimatedCost">0.00</span></p>
+
+            <div class="action-buttons-container">
+                <button id="saveQuoteBtn" style="display: none;">Save Quote</button>
+                <button id="openOrderModalBtn" class="button-primary" style="display: none;">Order</button>
+            </div>
+            
+            <section class="my-quotes-section" id="my-quotes-section" style="display: none;">
+                <h2>Quote History</h2>
+                <ul id="myQuotesList"></ul>
+            </section>
+        </section>
+    </main>
+
+    <div id="orderModal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <form id="orderForm">
+                <h3>Your Details</h3>
+                <input type="text" id="customerName" placeholder="Your Name" required>
+                <input type="email" id="customerEmail" placeholder="Your Email" required>
+                <textarea id="quoteNotes" placeholder="Any notes? (Optional)"></textarea>
+                <button type="submit" id="submitOrderBtn">LGTM! Order it!</button>
+            </form>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-functions-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
