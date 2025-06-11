@@ -38,44 +38,45 @@ document.addEventListener('DOMContentLoaded', () => {
     let uploadedImageUrls = [];
     let isUploading = false;
 
+    // --- Variables to hold our listener unsubscribe functions ---
+    let productListener = null;
+    let addOnsListener = null;
+    let quotesListener = null;
+
     // --- Initialize EmailJS ---
     (function(){ emailjs.init({ publicKey: "AFIyvSkpq2zKuBi9r" }); })();
 
     // --- Application Startup Sequence ---
-    async function initializeApp() {
-        await loadConfigData();
+    function initializeApp() {
+        setupProductListeners();
         setupEventListeners();
+        
         auth.onAuthStateChanged(user => {
              if (user) {
-                // These buttons only exist on product pages, so check first.
                 if (saveQuoteBtn) saveQuoteBtn.style.display = 'block';
                 if (openOrderModalBtn) openOrderModalBtn.style.display = 'block';
                 if (myQuotesSection) myQuotesSection.style.display = 'block';
-
-                // Only load quotes if the quote list exists on the page
-                if (myQuotesList) loadSavedQuotes(user.uid);
-                
+                if (myQuotesList) setupQuotesListener(user.uid);
                 if (customerNameInput) customerNameInput.value = user.displayName || '';
                 if (customerEmailInput) customerEmailInput.value = user.email || '';
             } else {
-                // Also check here before trying to hide elements
                 if (saveQuoteBtn) saveQuoteBtn.style.display = 'none';
                 if (openOrderModalBtn) openOrderModalBtn.style.display = 'none';
                 if (myQuotesSection) myQuotesSection.style.display = 'none';
-                if (myQuotesList) myQuotesList.innerHTML = '';
+                if (quotesListener) {
+                    quotesListener();
+                    quotesListener = null;
+                }
+                if (myQuotesList) myQuotesList.innerHTML = '<li>Please log in to see your saved quotes.</li>';
                 if (customerNameInput) customerNameInput.value = '';
                 if (customerEmailInput) customerEmailInput.value = '';
             }
         });
     }
 
-    async function handleAiImageGeneration() {
-        const prompt = aiPromptText.value.trim();
-        if (!prompt) {
-            alert("Please describe the character you want to create.");
-            return;
-        }
-
+    // This function remains the same
+    async function handleAiImageGeneration(event) {
+        event.preventDefault();
         aiLoadingIndicator.style.display = 'flex';
         generatePreviewBtn.disabled = true;
         generatePreviewBtn.textContent = 'Generating...';
@@ -88,12 +89,11 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log("User is authenticated, proceeding with function call.");
             
             const generateFunction = firebase.functions().httpsCallable('generateAiImage');
-            const result = await generateFunction({ prompt: prompt });
+            const result = await generateFunction({ prompt: aiPromptText.value.trim() });
             
             const imageUrl = result.data.imageUrl;
             if (imageUrl && productImage) {
                 productImage.src = imageUrl;
-                // Show the request quote button now that there's an image
                 if(requestQuoteBtn) requestQuoteBtn.style.display = 'block';
             }
 
@@ -107,16 +107,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Load Product Data ---
-    async function loadConfigData() {
+    // --- Real-time Data Listeners ---
+    function setupProductListeners() {
         const productId = currentProductIdInput.value;
         if (!productId) { return; }
-        try {
-            const productDoc = await db.collection('products').doc(productId).get();
+
+        if (productListener) productListener();
+        if (addOnsListener) addOnsListener();
+
+        productListener = db.collection('products').doc(productId).onSnapshot(productDoc => {
+            console.log("Product data updated in real-time.");
             if (!productDoc.exists) { return; }
+
             currentProductData = productDoc.data();
-            if (currentProductData.defaultImage) { productImage.src = currentProductData.defaultImage; }
-            
+            if (currentProductData.defaultImage && productImage) {
+                productImage.src = currentProductData.defaultImage;
+            }
+
             const createConfigRow = (container, item) => {
                 const itemDiv = document.createElement('div');
                 itemDiv.classList.add('config-item-row');
@@ -152,21 +159,87 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             if (productId === 'bufo') {
-                productColorSelect.innerHTML = '';
-                currentProductData.availableColors.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c.charAt(0).toUpperCase() + c.slice(1); productColorSelect.appendChild(o); });
-                productSizeSelect.innerHTML = '';
-                currentProductData.availableSizes.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; productSizeSelect.appendChild(o); });
-                const addOnSnapshot = await db.collection('addOns').get();
-                if (addOnOptionsDiv) addOnOptionsDiv.innerHTML = '';
-                addOnSnapshot.forEach(doc => {
-                    availableAddOns[doc.id] = doc.data();
-                    createConfigRow(addOnOptionsDiv, { id: doc.id, name: doc.data().name, checkId: `addon-check-${doc.id}`, qtyId: `qty-addon-${doc.id}` });
+                if(productColorSelect) {
+                    productColorSelect.innerHTML = '';
+                    currentProductData.availableColors.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c.charAt(0).toUpperCase() + c.slice(1); productColorSelect.appendChild(o); });
+                }
+                if(productSizeSelect) {
+                    productSizeSelect.innerHTML = '';
+                    currentProductData.availableSizes.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; productSizeSelect.appendChild(o); });
+                }
+
+                addOnsListener = db.collection('addOns').onSnapshot(addOnSnapshot => {
+                    console.log("Add-ons data updated in real-time.");
+                    
+                    const preservedState = {};
+                    if (addOnOptionsDiv) {
+                        addOnOptionsDiv.querySelectorAll('.item-checkbox').forEach(checkbox => {
+                            const addOnId = checkbox.dataset.id;
+                            const qtyInput = document.getElementById(`qty-addon-${addOnId}`);
+                            if (checkbox.checked && qtyInput) {
+                                preservedState[addOnId] = {
+                                    checked: true,
+                                    quantity: qtyInput.value
+                                };
+                            }
+                        });
+                    }
+
+                    if (addOnOptionsDiv) addOnOptionsDiv.innerHTML = '';
+                    availableAddOns = {}; 
+                    addOnSnapshot.forEach(doc => {
+                        availableAddOns[doc.id] = doc.data();
+                        createConfigRow(addOnOptionsDiv, { id: doc.id, name: doc.data().name, checkId: `addon-check-${doc.id}`, qtyId: `qty-addon-${doc.id}` });
+                        
+                        if (preservedState[doc.id]) {
+                            const newCheckbox = document.getElementById(`addon-check-${doc.id}`);
+                            const newQtyInput = document.getElementById(`qty-addon-${doc.id}`);
+                            if (newCheckbox && newQtyInput) {
+                                newCheckbox.checked = true;
+                                newQtyInput.value = preservedState[doc.id].quantity;
+                                newQtyInput.style.display = 'inline-block';
+                            }
+                        }
+                    });
+                    
+                    calculateQuote();
                 });
+
             } else if (productId === 'cartoon-charm') {
                 if (typeQuantitiesList) {
+                    // =================================================================
+                    // --- NEW: Applying the Preserve/Restore logic to this section ---
+                    // =================================================================
+                    
+                    // Step 1: Preserve current selections
+                    const preservedState = {};
+                    typeQuantitiesList.querySelectorAll('.item-checkbox').forEach(checkbox => {
+                        const typeId = checkbox.dataset.id; // e.g., "Happy Face"
+                        const qtyInput = document.querySelector(`.quantity-input[data-id="${typeId}"]`);
+                        if (checkbox.checked && qtyInput) {
+                            preservedState[typeId] = {
+                                checked: true,
+                                quantity: qtyInput.value
+                            };
+                        }
+                    });
+
+                    // Step 2: Redraw the list with fresh data
                     typeQuantitiesList.innerHTML = '';
                     currentProductData.availableTypes.forEach(type => {
-                        createConfigRow(typeQuantitiesList, { id: type, name: type, checkId: `type-check-${type.replace(/\s+/g, '-')}`, qtyId: `qty-type-${type.replace(/\s+/g, '-')}` });
+                        const typeIdSafe = type.replace(/\s+/g, '-');
+                        createConfigRow(typeQuantitiesList, { id: type, name: type, checkId: `type-check-${typeIdSafe}`, qtyId: `qty-type-${typeIdSafe}` });
+                        
+                        // Step 3: Restore the selections
+                        if (preservedState[type]) {
+                            const newCheckbox = document.getElementById(`type-check-${typeIdSafe}`);
+                            const newQtyInput = document.getElementById(`qty-type-${typeIdSafe}`);
+                            if (newCheckbox && newQtyInput) {
+                                newCheckbox.checked = true;
+                                newQtyInput.value = preservedState[type].quantity;
+                                newQtyInput.style.display = 'inline-block';
+                            }
+                        }
                     });
                 }
                 if (designFeeSpan && typeof currentProductData.designFee === 'number') {
@@ -175,12 +248,75 @@ document.addEventListener('DOMContentLoaded', () => {
                     designFeeSpan.textContent = currentProductData.designFee.toFixed(2);
                 }
             }
+
             updatePreviewImage();
             calculateQuote();
-        } catch (error) { console.error("Error loading config data:", error); }
+        }, error => {
+            console.error("Error listening to product data:", error);
+        });
     }
 
-    // --- Calculation Logic ---
+    function setupQuotesListener(userId) {
+        const productId = currentProductIdInput.value;
+        if (!myQuotesList) return;
+
+        if (quotesListener) quotesListener();
+
+        const query = db.collection('quotes')
+            .where('userId', '==', userId)
+            .where('productId', '==', productId)
+            .orderBy('timestamp', 'desc');
+
+        myQuotesList.innerHTML = '<li>Loading history...</li>';
+
+        quotesListener = query.onSnapshot(snapshot => {
+            console.log("Quotes list updated in real-time.");
+            myQuotesList.innerHTML = ''; 
+            if (snapshot.empty) {
+                myQuotesList.innerHTML = `<li>You have no saved quotes for this product.</li>`;
+                return;
+            }
+            snapshot.forEach(doc => {
+                const quote = doc.data();
+                const li = document.createElement('li');
+                const detailsDiv = document.createElement('div');
+                detailsDiv.classList.add('quote-details');
+                let dateTimeDisplay = 'N/A';
+                if (quote.timestamp) { const date = new Date(quote.timestamp.toDate()); const timeOptions = { hour: 'numeric', minute: '2-digit' }; dateTimeDisplay = `${date.toLocaleDateString()} at ${date.toLocaleTimeString([], timeOptions)}`; }
+                let detailsHtml = `<strong>${quote.productName} - $${quote.totalCost.toFixed(2)}</strong><br>`;
+                if (quote.productId === 'bufo') {
+                    const addOnsText = quote.selectedAddOns?.map(item => `${availableAddOns[item.id]?.name || item.id} (x${item.quantity})`).join(', ') || 'None';
+                    detailsHtml += `<small>Color: ${quote.color}, Size: ${quote.size}, Qty: ${quote.quantity}</small><br><small>Add-Ons: ${addOnsText}</small><br>`;
+                } else if (productId === 'cartoon-charm') {
+                    const itemsText = quote.items?.map(item => `${item.type} (x${item.quantity})`).join(', ') || 'None';
+                    detailsHtml += `<small>Items: ${itemsText}</small><br>`;
+                }
+                detailsHtml += `<small>Saved on: ${dateTimeDisplay}</small>`;
+                detailsDiv.innerHTML = detailsHtml;
+                const actionsDiv = document.createElement('div');
+                actionsDiv.classList.add('quote-actions');
+                const orderBtn = document.createElement('button');
+                orderBtn.textContent = 'Order';
+                orderBtn.classList.add('quote-order-btn');
+                orderBtn.dataset.quote = JSON.stringify(quote);
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = 'Delete';
+                deleteBtn.classList.add('quote-delete-btn');
+                deleteBtn.dataset.id = doc.id;
+                actionsDiv.appendChild(orderBtn);
+                actionsDiv.appendChild(deleteBtn);
+                li.appendChild(detailsDiv);
+                li.appendChild(actionsDiv);
+                myQuotesList.appendChild(li);
+            });
+        }, error => {
+            console.error("Error listening to saved quotes:", error);
+            myQuotesList.innerHTML = '<li>Error loading history. Check console for details.</li>';
+        });
+    }
+
+    // --- All other functions below this line remain unchanged ---
+
     function calculateQuote() {
         if (!currentProductData) return;
         const productId = currentProductIdInput.value;
@@ -223,7 +359,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 totalCost += currentProductData.designFee;
             }
         } else if (currentProductIdInput.value === 'ai-generator') {
-            // Just set the fixed price from the database
             const price = currentProductData?.basePrice || 0;
             if (estimatedCostSpan) estimatedCostSpan.textContent = price.toFixed(2);
         }
@@ -232,8 +367,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(printTimeSpan) printTimeSpan.textContent = totalTime.toFixed(0);
         if(estimatedCostSpan) estimatedCostSpan.textContent = totalCost.toFixed(2);
     }
-
-    // --- Universal Event Listeners ---
+    
     function setupEventListeners() {
         if (saveQuoteBtn) saveQuoteBtn.addEventListener('click', saveQuote);
         if (myQuotesList) myQuotesList.addEventListener('click', handleQuoteAction);
@@ -250,14 +384,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (requestQuoteBtn) {
             requestQuoteBtn.addEventListener('click', () => {
-                // Here you would trigger logic to open a modal or send an email
-                // For now, let's just use the existing order modal
                 if (orderModal) orderModal.style.display = 'flex';
             });
         }
     }
     
-    // --- Image Update Logic ---
     function updatePreviewImage() {
         if (!currentProductData) return;
         const productId = currentProductIdInput.value;
@@ -268,20 +399,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const addOnId = firstCheckedAddon ? firstCheckedAddon.dataset.id : 'none';
             const affectsImageKey = availableAddOns[addOnId]?.affectsImageKey;
             const imageKey = affectsImageKey ? `${affectsImageKey}` : 'plain_green';
-            productImage.src = currentProductData.imageMap[imageKey] || currentProductData.imageMap['plain_green'] || 'placeholder.jpg';
+            if(productImage) productImage.src = currentProductData.imageMap[imageKey] || currentProductData.imageMap['plain_green'] || 'placeholder.jpg';
         } else if (productId === 'cartoon-charm') {
             const firstCheckedType = document.querySelector('#typeQuantitiesList .item-checkbox:checked');
             if (firstCheckedType) {
                 const type = firstCheckedType.dataset.id;
                 const imageUrl = currentProductData.typeDetails[type]?.imageUrl;
-                if (imageUrl) productImage.src = imageUrl;
+                if (imageUrl && productImage) productImage.src = imageUrl;
             } else {
-                if(currentProductData.defaultImage) productImage.src = currentProductData.defaultImage;
+                if(currentProductData.defaultImage && productImage) productImage.src = currentProductData.defaultImage;
             }
         }
     }
     
-    // --- File Upload Handling ---
     function handleFileSelection(event) {
         const files = event.target.files;
         if (!files.length) { if(fileNameDisplay) fileNameDisplay.textContent = 'No file chosen'; return; }
@@ -339,7 +469,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Save Quote Logic ---
     async function saveQuote() {
         const user = auth.currentUser;
         if (!user) { alert("You must be logged in to save a quote."); return; }
@@ -375,56 +504,9 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             await db.collection('quotes').add(quoteData);
             alert("Quote saved successfully!");
-            loadSavedQuotes(user.uid);
         } catch (error) { console.error("Error saving quote: ", error); alert("Error saving quote."); }
     }
     
-    // --- Load Saved Quotes ---
-    async function loadSavedQuotes(userId) {
-        const productId = currentProductIdInput.value;
-        if(!myQuotesList) return;
-        myQuotesList.innerHTML = '<li>Loading history...</li>';
-        try {
-            const snapshot = await db.collection('quotes').where('userId', '==', userId).where('productId', '==', productId).orderBy('timestamp', 'desc').get();
-            myQuotesList.innerHTML = '';
-            if (snapshot.empty) { myQuotesList.innerHTML = `<li>You have no saved quotes for this product.</li>`; return; }
-            snapshot.forEach(doc => {
-                const quote = doc.data();
-                const li = document.createElement('li');
-                const detailsDiv = document.createElement('div');
-                detailsDiv.classList.add('quote-details');
-                let dateTimeDisplay = 'N/A';
-                if (quote.timestamp) { const date = new Date(quote.timestamp.toDate()); const timeOptions = { hour: 'numeric', minute: '2-digit' }; dateTimeDisplay = `${date.toLocaleDateString()} at ${date.toLocaleTimeString([], timeOptions)}`; }
-                let detailsHtml = `<strong>${quote.productName} - $${quote.totalCost.toFixed(2)}</strong><br>`;
-                if (quote.productId === 'bufo') {
-                    const addOnsText = quote.selectedAddOns?.map(item => `${availableAddOns[item.id]?.name || item.id} (x${item.quantity})`).join(', ') || 'None';
-                    detailsHtml += `<small>Color: ${quote.color}, Size: ${quote.size}, Qty: ${quote.quantity}</small><br><small>Add-Ons: ${addOnsText}</small><br>`;
-                } else if (productId === 'cartoon-charm') {
-                    const itemsText = quote.items?.map(item => `${item.type} (x${item.quantity})`).join(', ') || 'None';
-                    detailsHtml += `<small>Items: ${itemsText}</small><br>`;
-                }
-                detailsHtml += `<small>Saved on: ${dateTimeDisplay}</small>`;
-                detailsDiv.innerHTML = detailsHtml;
-                const actionsDiv = document.createElement('div');
-                actionsDiv.classList.add('quote-actions');
-                const orderBtn = document.createElement('button');
-                orderBtn.textContent = 'Order';
-                orderBtn.classList.add('quote-order-btn');
-                orderBtn.dataset.quote = JSON.stringify(quote);
-                const deleteBtn = document.createElement('button');
-                deleteBtn.textContent = 'Delete';
-                deleteBtn.classList.add('quote-delete-btn');
-                deleteBtn.dataset.id = doc.id;
-                actionsDiv.appendChild(orderBtn);
-                actionsDiv.appendChild(deleteBtn);
-                li.appendChild(detailsDiv);
-                li.appendChild(actionsDiv);
-                myQuotesList.appendChild(li);
-            });
-        } catch (error) { console.error("Error loading saved quotes:", error); myQuotesList.innerHTML = '<li>Error loading history. Check console for details.</li>'; }
-    }
-    
-    // --- Action Handlers and Form Population ---
     function handleQuoteAction(event) {
         const target = event.target;
         if (target.classList.contains('quote-delete-btn')) {
@@ -442,7 +524,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!user) return;
         try {
             await db.collection('quotes').doc(quoteId).delete();
-            loadSavedQuotes(user.uid);
         } catch (error) { console.error("Error deleting quote:", error); alert("Failed to delete quote."); }
     }
 
@@ -478,10 +559,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         calculateQuote();
         updatePreviewImage();
-        orderModal.style.display = 'flex';
+        if(orderModal) orderModal.style.display = 'flex';
     }
     
-    // --- Order Submission ---
     async function handleOrderSubmit(e) {
         e.preventDefault();
         
@@ -567,7 +647,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         } else if (productId === 'ai-generator') {
             orderData.prompt = aiPromptText.value;
-            orderData.generatedImageUrl = productImage.src; // Save the generated image URL with the order
+            orderData.generatedImageUrl = productImage.src; 
             orderDetailsString = `
                 Product: AI-Generated Custom Character
                 Prompt: ${orderData.prompt}
