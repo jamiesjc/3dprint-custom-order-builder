@@ -1,58 +1,90 @@
-// functions/index.js (FINAL & SECURE VERSION)
+// functions/index.js (Gemini/Imagen Version)
 
-const functions = require("firebase-functions");
-const {OpenAI} = require("openai");
-
-// Initialize Admin SDK only once
+const {onCall, HttpsError} = require("firebase-functions/v2/https");
+const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
-admin.initializeApp();
+const {VertexAI} = require("@google-cloud/vertexai");
+const {v4: uuidv4} = require("uuid"); // To generate unique filenames
 
-// The onCall trigger automatically handles authentication and CORS
-// when called from the Firebase client SDK.
-exports.generateAiImage = functions.https.onCall(async (data, context) => {
-  // 1. The onCall trigger automatically verifies the user's token.
-  // If the user is not logged in, 'context.auth' will be null.
-  if (!context.auth) {
-    throw new functions.https.HttpsError(
+// Initialize Firebase Admin SDK
+admin.initializeApp();
+const storage = admin.storage();
+
+// Initialize Vertex AI.
+// The constructor uses your project's service account credentials
+// automatically.
+const vertexAi = new VertexAI({
+  project: process.env.GCLOUD_PROJECT,
+  location: "us-central1",
+});
+
+const generativeModel = vertexAi.getGenerativeModel({
+  model: "imagegeneration@0.0.2", // The official model for Imagen
+});
+
+// Use the 2nd Gen onCall trigger
+exports.generateAiImage = onCall({region: "us-central1"}, async (request) => {
+  // The 'context' object is now part of the 'request' object in v2.
+  if (!request.auth) {
+    throw new HttpsError(
         "unauthenticated",
         "You must be logged in to generate an image.",
     );
   }
 
-  // Initialize the client inside the function to prevent startup crashes.
-  const openai = new OpenAI({
-    apiKey: functions.config().openai.key,
-  });
-
-  // 'data' is the object passed from your client-side call.
-  const userPrompt = data.prompt || "A cute 3D character";
-
+  // The 'data' object is also part of the 'request' object.
+  const userPrompt = request.data.prompt || "A cute 3D character";
   const fullPrompt =
-    "A high-resolution, photorealistic 3D render " +
-    "of a single, cute cartoon character based on the " +
-    `description: "${userPrompt}". The character should be ` +
-    "isolated on a clean, white studio background.";
+    "A photorealistic 3D render of a single, cute, " +
+    `cartoon character: "${userPrompt}". Clean white studio background.`;
 
   try {
-    const response = await openai.images.generate({
-      model: "dall-e-3",
-      prompt: fullPrompt,
-      n: 1,
-      size: "1024x1024",
-      quality: "standard",
+    logger.info(`Generating image for prompt: ${fullPrompt}`);
+
+    const requestPayload = {
+      contents: [{role: "user", parts: [{text: fullPrompt}]}],
+    };
+
+    const resp = await generativeModel.generateContent(requestPayload);
+
+    if (!resp.response.candidates || resp.response.candidates.length === 0) {
+      throw new HttpsError(
+          "not-found",
+          "The model did not return any candidates.",
+      );
+    }
+
+    const firstCandidate = resp.response.candidates[0];
+    const imageBase64 = firstCandidate.content.parts[0].fileData.data;
+
+    // --- Save the generated image to Cloud Storage ---
+    const bucket = storage.bucket(); // Your default Cloud Storage bucket
+    const fileName = `generated/${uuidv4()}.png`;
+    const file = bucket.file(fileName);
+
+    const buffer = Buffer.from(imageBase64, "base64");
+
+    await file.save(buffer, {
+      metadata: {
+        contentType: "image/png",
+      },
     });
 
-    const imageUrl = response.data[0].url;
-    console.log("Generated image URL:", imageUrl);
+    // Make the file public so it can be viewed in the browser
+    await file.makePublic();
 
-    // 2. Simply return the result. The SDK handles the response.
-    return {imageUrl: imageUrl};
+    const publicUrl = file.publicUrl();
+    logger.info(`Image saved to: ${publicUrl}`);
+
+    // Return the public URL of the image
+    return {imageUrl: publicUrl};
   } catch (error) {
-    console.error("Error calling OpenAI API:", error.message);
-    throw new functions.https.HttpsError(
+    logger.error("Error calling Vertex AI or saving to storage:", error);
+    // Throw a standard HttpsError
+    throw new HttpsError(
         "internal",
         "Failed to generate image. Please check the function logs.",
-        error,
+        error.message,
     );
   }
 });
