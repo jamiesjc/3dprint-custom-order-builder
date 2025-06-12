@@ -75,35 +75,88 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // This function remains the same
-    async function handleAiImageGeneration(event) {
+ async function handleAiImageGeneration(event) {
         event.preventDefault();
-        aiLoadingIndicator.style.display = 'flex';
-        generatePreviewBtn.disabled = true;
-        generatePreviewBtn.textContent = 'Generating...';
+        if (aiLoadingIndicator) aiLoadingIndicator.style.display = 'flex';
+        if (generatePreviewBtn) {
+            generatePreviewBtn.disabled = true;
+            generatePreviewBtn.textContent = 'Generating...';
+        }
+
+        const user = auth.currentUser;
+        if (!user) {
+            alert("You must be logged in to generate an image.");
+            if (aiLoadingIndicator) aiLoadingIndicator.style.display = 'none';
+            if (generatePreviewBtn) {
+                 generatePreviewBtn.disabled = false;
+                 generatePreviewBtn.textContent = 'Generate 3D Product Preview';
+            }
+            return;
+        }
+
+        const prompt = aiPromptText.value.trim();
+        if (!prompt) {
+            alert("Please enter a prompt.");
+            if (aiLoadingIndicator) aiLoadingIndicator.style.display = 'none';
+            if (generatePreviewBtn) {
+                 generatePreviewBtn.disabled = false;
+                 generatePreviewBtn.textContent = 'Generate 3D Product Preview';
+            }
+            return;
+        }
 
         try {
-            const user = firebase.auth().currentUser;
-            if (!user) {
-                throw new Error("You must be logged in to generate an image.");
+            console.log("User is authenticated, proceeding with HTTP function call.");
+
+            // !!!!! REPLACE 'YOUR_PROJECT_ID' WITH YOUR ACTUAL FIREBASE PROJECT ID !!!!!
+            const projectId = 'custom3dprintbuilder';
+            const region = 'us-central1';
+            const functionName = 'generateAiImageHttp';
+            const route = 'generateAiImage';
+
+            const apiUrl = new URL(`https://${region}-${projectId}.cloudfunctions.net/${functionName}/${route}`);
+            apiUrl.searchParams.append('prompt', prompt);
+
+            // Get the Firebase Auth ID token to send for authentication
+            const idToken = await user.getIdToken();
+
+            const response = await fetch(apiUrl.toString(), {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + idToken,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP error ${response.status}: ${errorText}`);
             }
-            console.log("User is authenticated, proceeding with function call.");
-            
-            const generateFunction = firebase.functions().httpsCallable('generateAiImage');
-            const result = await generateFunction({ prompt: aiPromptText.value.trim() });
-            
-            const imageUrl = result.data.imageUrl;
+
+            const result = await response.json();
+            const imageUrl = result.imageUrl;
+
             if (imageUrl && productImage) {
                 productImage.src = imageUrl;
                 if(requestQuoteBtn) requestQuoteBtn.style.display = 'block';
+                 // Clear any previous error messages related to image loading
+                productImage.alt = "AI Generated Product Image";
+            } else {
+                 throw new Error("Received an invalid image URL from the server.");
             }
 
         } catch (error) {
-            console.error("Error calling generateAiImage function:", error);
-            alert(`Error: ${error.message}`);
+            console.error("Error calling generateAiImageHttp function:", error);
+            alert(`Error generating image: ${error.message}`);
+            if (productImage) {
+                productImage.alt = "Error loading image";
+            }
         } finally {
-            aiLoadingIndicator.style.display = 'none';
-            generatePreviewBtn.disabled = false;
-            generatePreviewBtn.textContent = 'Generate 3D Product Preview';
+            if (aiLoadingIndicator) aiLoadingIndicator.style.display = 'none';
+            if (generatePreviewBtn) {
+                generatePreviewBtn.disabled = false;
+                generatePreviewBtn.textContent = 'Generate 3D Product Preview';
+            }
         }
     }
 
@@ -121,7 +174,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             currentProductData = productDoc.data();
             if (currentProductData.defaultImage && productImage) {
-                productImage.src = currentProductData.defaultImage;
+                if (!productImage.src.includes('generated')) { // Don't overwrite AI generated image
+                    productImage.src = currentProductData.defaultImage;
+                 }
             }
 
             const createConfigRow = (container, item) => {

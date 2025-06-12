@@ -1,90 +1,125 @@
-// functions/index.js (Gemini/Imagen Version)
-
-const {onCall, HttpsError} = require("firebase-functions/v2/https");
+// functions/index.js
+const {onRequest} = require("firebase-functions/v2/https");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
-const {VertexAI} = require("@google-cloud/vertexai");
+// const {VertexAI} = require("@google-cloud/vertexai");
 const {v4: uuidv4} = require("uuid"); // To generate unique filenames
+const cors = require("cors");
+const express = require("express");
+const axios = require("axios"); // For making REST calls to Vertex AI
+const {GoogleAuth} = require("google-auth-library");
 
 // Initialize Firebase Admin SDK
 admin.initializeApp();
 const storage = admin.storage();
 
-// Initialize Vertex AI.
-// The constructor uses your project's service account credentials
-// automatically.
-const vertexAi = new VertexAI({
-  project: process.env.GCLOUD_PROJECT,
-  location: "us-central1",
-});
+const app = express();
 
-const generativeModel = vertexAi.getGenerativeModel({
-  model: "imagegeneration@0.0.2", // The official model for Imagen
-});
+// Configure CORS options
+const corsOptions = {
+  origin: "http://localhost:5005", // Allow requests from your local dev server
+  methods: ["GET", "POST", "OPTIONS"], // Explicitly allow methods
+  allowedHeaders: ["Content-Type", "Authorization"], // Allow client headers
+  optionsSuccessStatus: 204, // Standard for OPTIONS preflight
+};
 
-// Use the 2nd Gen onCall trigger
-exports.generateAiImage = onCall({region: "us-central1"}, async (request) => {
-  // The 'context' object is now part of the 'request' object in v2.
-  if (!request.auth) {
-    throw new HttpsError(
-        "unauthenticated",
-        "You must be logged in to generate an image.",
-    );
-  }
+// Use CORS middleware for all routes in the Express app
+app.use(cors(corsOptions));
 
-  // The 'data' object is also part of the 'request' object.
-  const userPrompt = request.data.prompt || "A cute 3D character";
+// Your HTTP endpoint
+app.get("/generateAiImage", async (req, res) => {
+  // Example: Check for Authorization header if you're sending one
+  // const authHeader = req.headers.authorization;
+  // if (!authHeader) {
+  //   return res.status(401).send("Unauthorized");
+  // }
+
+  const userPrompt = req.query.prompt || "A cute 3D character";
   const fullPrompt =
     "A photorealistic 3D render of a single, cute, " +
-    `cartoon character: "${userPrompt}". Clean white studio background.`;
+    `cartoon character: "${userPrompt}". ` +
+    "Clean white studio background.";
 
   try {
     logger.info(`Generating image for prompt: ${fullPrompt}`);
 
-    const requestPayload = {
-      contents: [{role: "user", parts: [{text: fullPrompt}]}],
-    };
+    const project =
+      process.env.GCLOUD_PROJECT || admin.instanceId().app.options.projectId;
+    const location = "us-central1";
+    const model = "imagegeneration@002"; // Common model name for Imagen
 
-    const resp = await generativeModel.generateContent(requestPayload);
+    // Get an auth token for the Vertex AI API call
+    const auth = new GoogleAuth({
+      scopes: ["https://www.googleapis.com/auth/cloud-platform"],
+    });
+    const client = await auth.getClient();
+    const accessToken = (await client.getAccessToken()).token;
 
-    if (!resp.response.candidates || resp.response.candidates.length === 0) {
-      throw new HttpsError(
-          "not-found",
-          "The model did not return any candidates.",
+    const endpoint = `https://${location}-aiplatform.googleapis.com/v1/projects/${project}/locations/${location}/publishers/google/models/${model}:predict`;
+
+    const apiResponse = await axios.post(
+        endpoint,
+        {
+          instances: [
+            {prompt: fullPrompt},
+          ],
+          parameters: {
+            sampleCount: 1,
+          // You can add more parameters like aspectRatio, storageUri, etc.
+          },
+        },
+        {
+          headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+        },
+    );
+
+    const predictions = apiResponse.data.predictions;
+    if (
+      !predictions ||
+      predictions.length === 0 ||
+      !predictions[0].bytesBase64Encoded
+    ) {
+      logger.error(
+          "Vertex AI response missing expected image data:",
+          apiResponse.data,
       );
+      return res.status(404)
+          .send("The model did not return any image candidates.");
     }
-
-    const firstCandidate = resp.response.candidates[0];
-    const imageBase64 = firstCandidate.content.parts[0].fileData.data;
+    const imageBase64 = predictions[0].bytesBase64Encoded;
 
     // --- Save the generated image to Cloud Storage ---
     const bucket = storage.bucket(); // Your default Cloud Storage bucket
     const fileName = `generated/${uuidv4()}.png`;
     const file = bucket.file(fileName);
-
     const buffer = Buffer.from(imageBase64, "base64");
 
     await file.save(buffer, {
-      metadata: {
-        contentType: "image/png",
-      },
+      metadata: {contentType: "image/png"},
     });
-
-    // Make the file public so it can be viewed in the browser
-    await file.makePublic();
-
+    // await file.makePublic();
     const publicUrl = file.publicUrl();
     logger.info(`Image saved to: ${publicUrl}`);
 
-    // Return the public URL of the image
-    return {imageUrl: publicUrl};
+    res.send({imageUrl: publicUrl});
   } catch (error) {
-    logger.error("Error calling Vertex AI or saving to storage:", error);
-    // Throw a standard HttpsError
-    throw new HttpsError(
-        "internal",
-        "Failed to generate image. Please check the function logs.",
-        error.message,
+    logger.error(
+        "Error calling Vertex AI or saving to storage:",
+        error.response ? error.response.data : error.message,
     );
+    const errorMessage =
+      "Failed to generate image. " +
+      `Please check the function logs. ${error.message}`;
+    return res.status(500).send(errorMessage);
   }
 });
+
+// Export the Express app as a standard HTTP function
+// Set cors: false in options because Express handles CORS internally
+exports.generateAiImageHttp = onRequest(
+    {region: "us-central1", cors: false},
+    app,
+);
