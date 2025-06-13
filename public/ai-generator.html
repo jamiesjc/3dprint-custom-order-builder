@@ -20,11 +20,11 @@
                 <img id="productImage" src="product_images/saturn_girl.jpg" alt="AI Generated Preview">
             </div>
             <div class="controls">
-                <h2>Create Your Character</h2>
+                <h2>Create Your 3D Character</h2>
                 <input type="hidden" id="currentProductId" value="ai-generator">
 
                 <div class="ai-prompt-section">
-                    <label for="aiPromptText">1. Describe Your Character or Upload a Photo</label>
+                    <label for="aiPromptText">Describe Your Character in a few words:</label>
                     <textarea id="aiPromptText" rows="3" placeholder="e.g., a happy Corgi wearing a superhero cape"></textarea>
                     
                     <button id="generatePreviewBtn">Generate 3D Product Preview</button>
@@ -39,11 +39,50 @@
         <section class="results-section">
             <h2>Estimated Quote</h2>
             <p>This is an initial estimate. The final price may vary based on complexity.</p>
-            <p><strong>Custom AI Add-On:</strong> $<span id="estimatedCost">0.00</span></p>
+            
+            <p><strong>Estimated Price:</strong> $30 - $50
+               <span id="estimatedCost" style="display: none;"></span>
+            </p>
 
             <button id="requestQuoteBtn" class="primary-action-btn" style="display: none;">Request Final Quote</button>
         </section>
     </main>
+
+    <div id="orderModal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Finalize Your Quote Request</h2>
+            <p>Please confirm your details below. We will review your AI-generated design and send a final quote to your email.</p>
+            
+            <div class="modal-preview">
+                <img id="modalPreviewImage" src="#" alt="Your generated character preview">
+                <div class="modal-prompt-display">
+                    <strong>Your Prompt:</strong>
+                    <p id="modalPromptText"></p>
+                </div>
+            </div>
+
+            <form id="orderForm">
+                <label for="customerName">Your Name</label>
+                <input type="text" id="customerName" required>
+                
+                <label for="customerEmail">Your Email</label>
+                <input type="email" id="customerEmail" required>
+
+                <label for="quoteNotes">Additional Notes (Optional)</label>
+                <textarea id="quoteNotes" rows="3" placeholder="Add any specific requests or comments..."></textarea>
+                
+                <div id="fileUploadSection" style="display: none;">
+                    <label for="photoUpload">Upload Reference Photos (Optional):</label>
+                    <input type="file" id="photoUpload" multiple accept="image/*">
+                    <span id="fileNameDisplay">No file chosen</span>
+                    <div id="filePreviewContainer"></div>
+                </div>
+
+                <button type="submit">Send Quote Request</button>
+            </form>
+        </div>
+    </div>
 
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>

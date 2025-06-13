@@ -1,3 +1,4 @@
+/* style.css */
 /* =================================================================== */
 /* 1. Global & Product Page Styles (Affects bufo.html)
 /* =================================================================== */
@@ -102,8 +103,6 @@ button:hover { background-color: #0056b3; }
 /* =================================================================== */
 /* 2. Catalog Page Styles (Affects index.html ONLY)
 /* =================================================================== */
-
-/* --- Scoped Global & Variables --- */
 :root {
     --primary-color: #007bff;
     --dark-bg: #2c3e50;
@@ -112,537 +111,201 @@ button:hover { background-color: #0056b3; }
     --text-dark: #34495e;
     --border-color: #dee2e6;
 }
-
-body.page-catalog {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background-color: var(--light-bg);
-    color: var(--text-dark);
-}
-
-/* Scoped Layout Container */
-.page-catalog .container {
-    width: 90%;
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-/* --- Scoped Header & Integrated Auth --- */
-.page-catalog header {
-    background-color: var(--dark-bg);
-    color: var(--text-light);
-    padding: 15px 0;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.page-catalog .header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 15px;
-}
-
-.page-catalog header h1 {
-    margin: 0;
-    font-size: 1.75rem;
-}
-
-.page-catalog .auth-controls {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.page-catalog #authStatus {
-    font-size: 0.9em;
-    margin-right: 10px;
-    color: var(--text-light);
-    opacity: 0.8;
-}
-
-.page-catalog .auth-controls input {
-    padding: 8px 10px;
-    font-size: 14px;
-    background-color: #4a617a;
-    border: 1px solid #5d7a99;
-    color: var(--text-light);
-    border-radius: 4px;
-    width: 160px;
-}
-
-.page-catalog .auth-controls input::placeholder {
-    color: var(--text-light);
-    opacity: 0.7;
-}
-
-.page-catalog .auth-controls button {
-    padding: 8px 15px;
-    font-size: 14px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-    background-color: var(--primary-color);
-    color: white;
-}
-
-.page-catalog .auth-controls button:hover {
-    background-color: #0056b3;
-}
-
-.page-catalog #logoutBtn {
-    background-color: #c82333;
-}
-.page-catalog #logoutBtn:hover {
-    background-color: #a41d2a;
-}
-
-
-/* --- Scoped Main Content & Product Grid --- */
-.page-catalog main {
-    padding: 40px 0; /* Override generic main padding */
-}
-
-.page-catalog main h2 {
-    font-size: 2rem;
-    margin-bottom: 25px;
-    border-bottom: 2px solid var(--border-color);
-    padding-bottom: 10px;
-}
-
-.page-catalog .product-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 25px;
-}
-
-.page-catalog .product-card {
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    overflow: hidden;
-    text-align: center;
-    text-decoration: none;
-    color: var(--text-dark);
-    display: flex;
-    flex-direction: column;
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-}
-
-.page-catalog .product-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
-}
-
-.page-catalog .product-card img {
-    width: 100%;
-    height: 250px;
-    object-fit: contain;
-    background-color: #fff;
-    padding: 10px;
-}
-
-.page-catalog .product-card h3 {
-    margin: 15px 10px 5px;
-    font-size: 1.25rem;
-}
-
-.page-catalog .product-card p {
-    font-size: 0.95em;
-    color: #6c757d;
-    padding: 0 15px 20px;
-    flex-grow: 1;
-}
-
-/* --- Scoped Footer --- */
-.page-catalog footer {
-    background-color: #343a40;
-    color: var(--text-light);
-    text-align: center;
-    padding: 20px 0;
-    margin-top: auto;
-    font-size: 0.9em;
-}
-
-.page-catalog footer p {
-    margin: 0;
-    opacity: 0.8;
-}
-
-/* --- Styles for Customization Section Headings on Charm Page --- */
-#uploadSection > label,
-#typeQuantitiesSection > label {
-    font-size: 1.2rem; /* Makes the font about 10% larger */
-    font-weight: 600;  /* Makes the font bolder */
-}
-
-/* --- Styles for Type Quantity List --- */
-#typeQuantitiesSection label {
-    display: block;
-    font-weight: bold;
-    margin-bottom: 10px;
-}
-
-#typeQuantitiesList {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.type-quantity-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: #f9f9f9;
-    padding: 10px 15px;
-    border-radius: 5px;
-    border: 1px solid #eee;
-}
-
-.type-quantity-item label {
-    margin-bottom: 0;
-    font-weight: normal;
-    color: #333;
-}
-
-.type-quantity-item input {
-    width: 70px;
-    text-align: center;
-}
-
-/* --- Configurator Item Row Styles (for Bufo & Charms) --- */
-#addOnOptions, #typeQuantitiesList {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.config-item-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: #fff;
-    padding: 12px 15px;
-    border-radius: 6px;
-    border: 1px solid #e9ecef;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.config-item-row:hover {
-    border-color: #ced4da;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-.config-item-row .label-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.config-item-row .item-checkbox {
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0;
-}
-
-.config-item-row label {
-    font-weight: 500;
-    color: #495057;
-    cursor: pointer;
-}
-
-.config-item-row .quantity-input {
-    width: 60px;
-    text-align: center;
-    padding: 6px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    flex-shrink: 0;
-}
-
-.config-item-row .quantity-input:focus {
-    outline: none;
-    border-color: var(--primary-color, #007bff);
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
-}
-
-/* --- Custom File Upload Button Styles --- */
-
-/* This hides the original, ugly <input type="file"> */
-#uploadSection input[type="file"], .file-upload-area input[type="file"] {
-    display: none;
-}
-
-/* Container for our new button and text */
-.custom-file-upload {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    margin-top: 5px;
-}
-
-/* Styles the <label> to look like a button */
-.file-upload-button {
-    display: inline-block;
-    background-color: #6c757d;
-    color: white;
-    padding: 8px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: background-color 0.2s ease;
-}
-
-.file-upload-button:hover {
-    background-color: #5a6268;
-}
-
-/* Styles the text that shows the selected file name */
-#fileNameDisplay {
-    font-style: italic;
-    color: #6c757d;
-    font-size: 0.9em;
-}
-
-.section-label {
-    display: block;
-    font-weight: bold;
-    margin-bottom: 10px;
-}
-
-/* --- Styles for File Upload Preview --- */
-#filePreviewContainer {
-    margin-top: 15px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.file-preview-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background-color: #f8f9fa;
-    padding: 8px 12px;
-    border-radius: 4px;
-    border: 1px solid #dee2e6;
-    font-size: 0.9em;
-}
-
-.file-preview-item .file-name {
-    flex-grow: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.file-preview-item .file-status {
-    flex-shrink: 0;
-    font-weight: bold;
-    color: #6c757d;
-}
-
-/* --- AI Generator Page Styles --- */
-.ai-prompt-section textarea {
-    width: 100%;
-    padding: 10px;
-    font-size: 1rem;
-    border-radius: 4px;
-    border: 1px solid #ddd;
-    box-sizing: border-box;
-    margin: 8px 0;
-}
-
-#generatePreviewBtn, #requestQuoteBtn {
-    width: 100%;
-    padding: 12px 15px;
-    font-size: 16px;
-    font-weight: bold;
-    margin-top: 10px;
-}
-
-#generatePreviewBtn {
-    background-color: #9b59b6; /* Purple for AI actions */
-}
-
-#generatePreviewBtn:hover {
-    background-color: #8e44ad;
-}
-
-#requestQuoteBtn {
-    background-color: #007bff;
-}
+body.page-catalog { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: var(--light-bg); color: var(--text-dark); }
+.page-catalog .container { width: 90%; max-width: 1200px; margin: 0 auto; }
+.page-catalog header { background-color: var(--dark-bg); color: var(--text-light); padding: 15px 0; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); }
+.page-catalog .header-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+.page-catalog header h1 { margin: 0; font-size: 1.75rem; }
+.page-catalog .auth-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.page-catalog #authStatus { font-size: 0.9em; margin-right: 10px; color: var(--text-light); opacity: 0.8; }
+.page-catalog .auth-controls input { padding: 8px 10px; font-size: 14px; background-color: #4a617a; border: 1px solid #5d7a99; color: var(--text-light); border-radius: 4px; width: 160px; }
+.page-catalog .auth-controls input::placeholder { color: var(--text-light); opacity: 0.7; }
+.page-catalog .auth-controls button { padding: 8px 15px; font-size: 14px; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s ease; background-color: var(--primary-color); color: white; }
+.page-catalog .auth-controls button:hover { background-color: #0056b3; }
+.page-catalog #logoutBtn { background-color: #c82333; }
+.page-catalog #logoutBtn:hover { background-color: #a41d2a; }
+.page-catalog main { padding: 40px 0; }
+.page-catalog main h2 { font-size: 2rem; margin-bottom: 25px; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; }
+.page-catalog .product-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; }
+.page-catalog .product-card { background-color: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); overflow: hidden; text-align: center; text-decoration: none; color: var(--text-dark); display: flex; flex-direction: column; transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
+.page-catalog .product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1); }
+.page-catalog .product-card img { width: 100%; height: 250px; object-fit: contain; background-color: #fff; padding: 10px; }
+.page-catalog .product-card h3 { margin: 15px 10px 5px; font-size: 1.25rem; }
+.page-catalog .product-card p { font-size: 0.95em; color: #6c757d; padding: 0 15px 20px; flex-grow: 1; }
+.page-catalog footer { background-color: #343a40; color: var(--text-light); text-align: center; padding: 20px 0; margin-top: auto; font-size: 0.9em; }
+.page-catalog footer p { margin: 0; opacity: 0.8; }
+#uploadSection > label, #typeQuantitiesSection > label { font-size: 1.2rem; font-weight: 600; }
+#typeQuantitiesSection label { display: block; font-weight: bold; margin-bottom: 10px; }
+#typeQuantitiesList { display: flex; flex-direction: column; gap: 15px; }
+.type-quantity-item { display: flex; justify-content: space-between; align-items: center; background-color: #f9f9f9; padding: 10px 15px; border-radius: 5px; border: 1px solid #eee; }
+.type-quantity-item label { margin-bottom: 0; font-weight: normal; color: #333; }
+.type-quantity-item input { width: 70px; text-align: center; }
+#addOnOptions, #typeQuantitiesList { display: flex; flex-direction: column; gap: 8px; }
+.config-item-row { display: flex; justify-content: space-between; align-items: center; background-color: #fff; padding: 12px 15px; border-radius: 6px; border: 1px solid #e9ecef; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+.config-item-row:hover { border-color: #ced4da; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+.config-item-row .label-wrapper { display: flex; align-items: center; gap: 12px; }
+.config-item-row .item-checkbox { width: 18px; height: 18px; flex-shrink: 0; }
+.config-item-row label { font-weight: 500; color: #495057; cursor: pointer; }
+.config-item-row .quantity-input { width: 60px; text-align: center; padding: 6px; border: 1px solid #ced4da; border-radius: 4px; flex-shrink: 0; }
+.config-item-row .quantity-input:focus { outline: none; border-color: var(--primary-color, #007bff); box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25); }
+#uploadSection input[type="file"], .file-upload-area input[type="file"] { display: none; }
+.custom-file-upload { display: flex; align-items: center; gap: 15px; margin-top: 5px; }
+.file-upload-button { display: inline-block; background-color: #6c757d; color: white; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600; transition: background-color 0.2s ease; }
+.file-upload-button:hover { background-color: #5a6268; }
+#fileNameDisplay { font-style: italic; color: #6c757d; font-size: 0.9em; }
+.section-label { display: block; font-weight: bold; margin-bottom: 10px; }
+#filePreviewContainer { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
+.file-preview-item { display: flex; align-items: center; gap: 10px; background-color: #f8f9fa; padding: 8px 12px; border-radius: 4px; border: 1px solid #dee2e6; font-size: 0.9em; }
+.file-preview-item .file-name { flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.file-preview-item .file-status { flex-shrink: 0; font-weight: bold; color: #6c757d; }
+.ai-prompt-section textarea { width: 100%; padding: 10px; font-size: 1rem; border-radius: 4px; border: 1px solid #ddd; box-sizing: border-box; margin: 8px 0; }
+#generatePreviewBtn, #requestQuoteBtn { width: 100%; padding: 12px 15px; font-size: 16px; font-weight: bold; margin-top: 10px; }
+#generatePreviewBtn { background-color: #9b59b6; }
+#generatePreviewBtn:hover { background-color: #8e44ad; }
+#requestQuoteBtn { background-color: #007bff; }
 
 /* =================================================================== */
 /* 3. MODERN PRODUCT PAGE LAYOUT (cartoon-charm, team-swag)
-/* NEW STYLES ADDED HERE
 /* =================================================================== */
-
-/* Use a class on the main element for product pages to scope these styles */
-main.product-page {
-    width: 100%;
-    max-width: 1200px;
-    margin: 20px auto;
-    padding: 0 20px;
-    box-sizing: border-box; 
+main.product-page { width: 100%; max-width: 1200px; margin: 20px auto; padding: 0 20px; box-sizing: border-box; }
+.product-container { display: flex; flex-wrap: wrap; gap: 40px; }
+.product-image-container { flex: 1 1 40%; min-width: 300px; position: sticky; top: 20px; align-self: flex-start; }
+.product-image-container .product-image { width: 100%; border-radius: 12px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1); background-color: #ffffff; border: 1px solid #e9ecef; }
+.product-config-container { flex: 1 1 55%; min-width: 320px; }
+.product-config-container h2 { font-size: 2.5rem; font-weight: 700; margin-top: 0; margin-bottom: 8px; color: #2c3e50; }
+.product-config-container > p { font-size: 1.1rem; color: #555; margin-bottom: 30px; line-height: 1.6; }
+.config-section { background-color: #ffffff; padding: 25px; border-radius: 8px; border: 1px solid #dee2e6; margin-bottom: 30px; }
+.config-section h3 { font-size: 1.5rem; margin-top: 0; padding-bottom: 15px; border-bottom: 1px solid #e9ecef; margin-bottom: 20px; color: #34495e; }
+.config-section > p { color: #6c757d; font-size: 0.95rem; margin-top: -15px; margin-bottom: 20px; }
+.file-upload-area { background-color: #f8f9fa; border: 2px dashed #ced4da; border-radius: 8px; padding: 30px; text-align: center; transition: border-color 0.2s ease, background-color 0.2s ease; }
+.file-upload-area:hover { border-color: var(--primary-color, #007bff); background-color: #fff; }
+.file-upload-label { background-color: var(--primary-color, #007bff); color: white; padding: 12px 24px; border-radius: 5px; cursor: pointer; font-weight: 600; transition: background-color 0.2s ease; font-size: 1rem; }
+.file-upload-label:hover { background-color: #0056b3; }
+.quote-summary .summary-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f1f3f5; font-size: 1rem; color: #495057; }
+.quote-summary .summary-item:last-child { border-bottom: none; font-weight: bold; }
+.quote-summary p { margin: 0; }
+.quote-summary #estimatedCost { font-weight: 700; font-size: 1.75rem; color: #28a745; }
+.actions { display: flex; flex-wrap: wrap; gap: 15px; }
+.actions .button-primary, .actions .button-secondary { flex: 1; padding: 15px; font-size: 1.1rem; font-weight: bold; }
+.button-primary { background-color: var(--primary-color, #007bff); }
+.button-secondary { background-color: #6c757d; }
+@media (max-width: 768px) {
+    .product-container { flex-direction: column; }
+    .product-image-container { position: static; }
+    .product-config-container h2 { font-size: 2rem; }
 }
 
-.product-container {
+/* --- Modern Order Modal Styles --- */
+.modal-preview {
     display: flex;
-    flex-wrap: wrap; /* Allows stacking on smaller screens */
-    gap: 40px;
-}
-
-/* Left column for the image */
-.product-image-container {
-    flex: 1 1 40%; /* Flex-grow, flex-shrink, flex-basis */
-    min-width: 300px;
-    position: sticky; 
-    top: 20px;
-    align-self: flex-start;
-}
-
-.product-image-container .product-image {
-    width: 100%;
-    border-radius: 12px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    background-color: #ffffff;
-    border: 1px solid #e9ecef;
-}
-
-/* Right column for the configuration options */
-.product-config-container {
-    flex: 1 1 55%;
-    min-width: 320px;
-}
-
-.product-config-container h2 {
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin-top: 0;
-    margin-bottom: 8px;
-    color: #2c3e50;
-}
-
-.product-config-container > p { 
-    font-size: 1.1rem;
-    color: #555;
-    margin-bottom: 30px;
-    line-height: 1.6;
-}
-
-/* Styling for each step/section of the configuration */
-.config-section {
-    background-color: #ffffff;
-    padding: 25px;
-    border-radius: 8px;
-    border: 1px solid #dee2e6;
-    margin-bottom: 30px;
-}
-
-.config-section h3 {
-    font-size: 1.5rem;
-    margin-top: 0;
-    padding-bottom: 15px;
-    border-bottom: 1px solid #e9ecef;
-    margin-bottom: 20px;
-    color: #34495e;
-}
-
-.config-section > p {
-    color: #6c757d;
-    font-size: 0.95rem;
-    margin-top: -15px;
-    margin-bottom: 20px;
-}
-
-/* Enhanced File Upload Area Styling */
-.file-upload-area {
+    align-items: center;
+    gap: 20px;
     background-color: #f8f9fa;
-    border: 2px dashed #ced4da;
+    border: 1px solid #dee2e6;
     border-radius: 8px;
-    padding: 30px;
-    text-align: center;
-    transition: border-color 0.2s ease, background-color 0.2s ease;
+    padding: 15px;
+    margin-bottom: 25px;
 }
 
-.file-upload-area:hover {
-    border-color: var(--primary-color, #007bff);
+#modalPreviewImage {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
     background-color: #fff;
+    flex-shrink: 0;
 }
 
-.file-upload-label {
-    background-color: var(--primary-color, #007bff);
-    color: white;
-    padding: 12px 24px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: background-color 0.2s ease;
-    font-size: 1rem;
-}
-
-.file-upload-label:hover {
-    background-color: #0056b3;
-}
-
-/* Quote Summary Section Specifics */
-.quote-summary .summary-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 12px 0;
-    border-bottom: 1px solid #f1f3f5;
-    font-size: 1rem;
+.modal-prompt-display {
+    font-size: 0.9rem;
     color: #495057;
 }
 
-.quote-summary .summary-item:last-child {
-    border-bottom: none;
-    font-weight: bold;
+.modal-prompt-display strong {
+    color: #212529;
 }
 
-.quote-summary p {
-    margin: 0;
+.modal-prompt-display p {
+    margin: 4px 0 0 0;
+    font-style: italic;
+    color: #6c757d;
 }
 
-.quote-summary #estimatedCost {
-    font-weight: 700;
-    font-size: 1.75rem;
-    color: #28a745;
-}
-
-/* Action Buttons Container */
-.actions {
+/* Overriding the generic #orderForm for a clean, stacked layout inside the modal */
+#orderModal #orderForm {
     display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
+    flex-direction: column; /* This is the key change */
+    gap: 15px; /* Creates vertical space between form elements */
+    margin-top: 0;
 }
 
-.actions .button-primary,
-.actions .button-secondary {
-    flex: 1; /* Make buttons grow to fill space */
-    padding: 15px;
-    font-size: 1.1rem;
-    font-weight: bold;
+#orderModal #orderForm label {
+    font-weight: 600;
+    color: #343a40;
+    font-size: 0.9rem;
+    margin-bottom: -10px; /* Reduces space between label and input */
 }
 
-.button-primary {
-    background-color: var(--primary-color, #007bff);
-}
-.button-secondary {
-    background-color: #6c757d;
+#orderModal #orderForm input[type="text"],
+#orderModal #orderForm input[type="email"],
+#orderModal #orderForm textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+    font-size: 1rem;
+    box-sizing: border-box; /* Ensures padding doesn't affect width */
+    flex: none; /* Reset flex property from generic rule */
+    min-width: 0; /* Reset min-width */
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .product-container {
-        flex-direction: column;
-    }
-    .product-image-container {
-        position: static; /* Unstick the image on mobile */
-    }
-    .product-config-container h2 {
-        font-size: 2rem;
-    }
+#orderModal #orderForm input:focus,
+#orderModal #orderForm textarea:focus {
+    outline: none;
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+#orderModal #orderForm button[type="submit"] {
+    width: 100%;
+    padding: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: 10px; /* Add some space above the button */
+    border-radius: 5px;
+}
+
+/* =================================================================== */
+/* 4. ENLARGED PRODUCT IMAGE STYLES (Global Override)
+/* =================================================================== */
+
+/* --- For Modern Layouts (Cartoon Charm & Team Swag) --- */
+
+/* We are increasing the flex-basis of the image container from 40% to 55%
+   to make it the dominant column on the page. */
+.product-image-container {
+    flex: 1 1 55%; /* Changed from 40% */
+}
+
+/* We are decreasing the controls container to 40% to make room. */
+.product-config-container {
+    flex: 1 1 40%; /* Changed from 55% */
+}
+
+/* We also want the image itself to take up more vertical space */
+.product-image-container .product-image {
+    max-height: 80vh; /* Allow the image to be up to 80% of the viewport height */
+}
+
+
+/* --- For Older Layouts (AI Generator & Bufo) --- */
+
+/* We are increasing the height from a fixed 300px to a responsive
+   viewport height unit (vh), with sensible min and max values. */
+.product-image-display {
+    height: 60vh;       /* Set height to 60% of the browser window's height */
+    min-height: 450px;  /* Ensure it's never too small */
+    max-height: 700px;  /* Ensure it doesn't get excessively large on tall monitors */
 }

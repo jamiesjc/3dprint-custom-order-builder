@@ -107,8 +107,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             console.log("User is authenticated, proceeding with HTTP function call.");
-
-            // !!!!! REPLACE 'YOUR_PROJECT_ID' WITH YOUR ACTUAL FIREBASE PROJECT ID !!!!!
             const projectId = 'custom3dprintbuilder';
             const region = 'us-central1';
             const functionName = 'generateAiImageHttp';
@@ -116,8 +114,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const apiUrl = new URL(`https://${region}-${projectId}.cloudfunctions.net/${functionName}/${route}`);
             apiUrl.searchParams.append('prompt', prompt);
-
-            // Get the Firebase Auth ID token to send for authentication
             const idToken = await user.getIdToken();
 
             const response = await fetch(apiUrl.toString(), {
@@ -139,7 +135,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (imageUrl && productImage) {
                 productImage.src = imageUrl;
                 if(requestQuoteBtn) requestQuoteBtn.style.display = 'block';
-                 // Clear any previous error messages related to image loading
                 productImage.alt = "AI Generated Product Image";
             } else {
                  throw new Error("Received an invalid image URL from the server.");
@@ -170,11 +165,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         productListener = db.collection('products').doc(productId).onSnapshot(productDoc => {
             console.log("Product data updated in real-time for:", productId);
-            if (!productDoc.exists) { return; }
+            if (!productDoc.exists) { 
+                if (productId === 'ai-generator') {
+                    calculateQuote();
+                }
+                return; 
+            }
 
             currentProductData = productDoc.data();
             if (currentProductData.defaultImage && productImage) {
-                if (!productImage.src.includes('generated')) { // Don't overwrite AI generated image
+                if (!productImage.src.includes('generated')) { 
                     productImage.src = currentProductData.defaultImage;
                  }
             }
@@ -224,8 +224,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 addOnsListener = db.collection('addOns').onSnapshot(addOnSnapshot => {
-                    console.log("Add-ons data updated in real-time.");
-                    
                     const preservedState = {};
                     if (addOnOptionsDiv) {
                         addOnOptionsDiv.querySelectorAll('.item-checkbox').forEach(checkbox => {
@@ -260,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     calculateQuote();
                 });
 
-            } else if (productId === 'cartoon-charm' || productId === 'team-swag') { // UPDATED: Logic now applies to both
+            } else if (productId === 'cartoon-charm' || productId === 'team-swag') {
                 if (typeQuantitiesList) {
                     const preservedState = {};
                     typeQuantitiesList.querySelectorAll('.item-checkbox').forEach(checkbox => {
@@ -318,7 +316,6 @@ document.addEventListener('DOMContentLoaded', () => {
         myQuotesList.innerHTML = '<li>Loading history...</li>';
 
         quotesListener = query.onSnapshot(snapshot => {
-            console.log("Quotes list updated in real-time.");
             myQuotesList.innerHTML = ''; 
             if (snapshot.empty) {
                 myQuotesList.innerHTML = `<li>You have no saved quotes for this product.</li>`;
@@ -335,7 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (quote.productId === 'bufo') {
                     const addOnsText = quote.selectedAddOns?.map(item => `${availableAddOns[item.id]?.name || item.id} (x${item.quantity})`).join(', ') || 'None';
                     detailsHtml += `<small>Color: ${quote.color}, Size: ${quote.size}, Qty: ${quote.quantity}</small><br><small>Add-Ons: ${addOnsText}</small><br>`;
-                } else if (productId === 'cartoon-charm' || productId === 'team-swag') { // UPDATED: Also works for team-swag
+                } else if (productId === 'cartoon-charm' || productId === 'team-swag') {
                     const itemsText = quote.items?.map(item => `${item.type} (x${item.quantity})`).join(', ') || 'None';
                     detailsHtml += `<small>Items: ${itemsText}</small><br>`;
                 }
@@ -366,9 +363,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- All other functions below this line remain unchanged ---
 
     function calculateQuote() {
-        if (!currentProductData) return;
         const productId = currentProductIdInput.value;
         let totalCost = 0, totalMaterial = 0, totalTime = 0;
+
+        if (!currentProductData && productId !== 'ai-generator') return;
+
         if (productId === 'bufo') {
             const quantity = parseInt(productQuantityInput.value) || 1;
             const selectedSize = productSizeSelect.value;
@@ -387,7 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     totalTime += (addOnData.printTimeMinutes || 0) * addOnQty;
                 }
             });
-        } else if (productId === 'cartoon-charm' || productId === 'team-swag') { // UPDATED: Logic now applies to both
+        } else if (productId === 'cartoon-charm' || productId === 'team-swag') {
             let totalItems = 0;
             document.querySelectorAll('#typeQuantitiesList .item-checkbox:checked').forEach(checkbox => {
                 const type = checkbox.dataset.id;
@@ -406,9 +405,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (totalItems > 0 && typeof currentProductData.designFee === 'number') {
                 totalCost += currentProductData.designFee;
             }
-        } else if (currentProductIdInput.value === 'ai-generator') {
-            const price = currentProductData?.basePrice || 0;
-            if (estimatedCostSpan) estimatedCostSpan.textContent = price.toFixed(2);
+        } else if (productId === 'ai-generator') {
+            totalCost = 30;
         }
 
         if(materialUsageSpan) materialUsageSpan.textContent = totalMaterial.toFixed(2);
@@ -432,14 +430,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (requestQuoteBtn) {
             requestQuoteBtn.addEventListener('click', () => {
-                if (orderModal) orderModal.style.display = 'flex';
+                if (orderModal) {
+                    // FIX: Populate the new preview elements in the modal
+                    if (currentProductIdInput.value === 'ai-generator') {
+                        const modalPreviewImage = document.getElementById('modalPreviewImage');
+                        const modalPromptText = document.getElementById('modalPromptText');
+
+                        if (modalPreviewImage) modalPreviewImage.src = productImage.src;
+                        if (modalPromptText) modalPromptText.textContent = aiPromptText.value;
+                        
+                        // Clear the notes field for user input
+                        if (quoteNotesInput) quoteNotesInput.value = ''; 
+                    }
+                    orderModal.style.display = 'flex';
+                }
             });
         }
     }
     
     function updatePreviewImage() {
-        if (!currentProductData) return;
         const productId = currentProductIdInput.value;
+        if (!currentProductData && productId !== 'ai-generator') return;
+
         if (productId === 'bufo') {
             if (!productColorSelect || !currentProductData.imageMap) return;
             const selectedColor = productColorSelect.value;
@@ -448,7 +460,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const affectsImageKey = availableAddOns[addOnId]?.affectsImageKey;
             const imageKey = affectsImageKey ? `${affectsImageKey}` : 'plain_green';
             if(productImage) productImage.src = currentProductData.imageMap[imageKey] || currentProductData.imageMap['plain_green'] || 'placeholder.jpg';
-        } else if (productId === 'cartoon-charm' || productId === 'team-swag') { // UPDATED: Logic now applies to both
+        } else if (productId === 'cartoon-charm' || productId === 'team-swag') {
             const firstCheckedType = document.querySelector('#typeQuantitiesList .item-checkbox:checked');
             if (firstCheckedType) {
                 const type = firstCheckedType.dataset.id;
@@ -539,7 +551,7 @@ document.addEventListener('DOMContentLoaded', () => {
             quoteData.size = productSizeSelect.value;
             quoteData.quantity = parseInt(productQuantityInput.value, 10);
             quoteData.selectedAddOns = selectedAddOns;
-        } else if (productId === 'cartoon-charm' || productId === 'team-swag') { // UPDATED: Logic now applies to both
+        } else if (productId === 'cartoon-charm' || productId === 'team-swag') {
             const items = [];
             document.querySelectorAll('#typeQuantitiesList .item-checkbox:checked').forEach(checkbox => {
                 const type = checkbox.dataset.id;
@@ -592,7 +604,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     qtyInput.style.display = 'inline-block';
                 }
             });
-        } else if (productId === 'cartoon-charm' || productId === 'team-swag') { // UPDATED: Logic now applies to both
+        } else if (productId === 'cartoon-charm' || productId === 'team-swag') {
             document.querySelectorAll('#typeQuantitiesList .item-checkbox').forEach(cb => cb.checked = false);
             document.querySelectorAll('#typeQuantitiesList .quantity-input').forEach(inp => { inp.value = 0; inp.style.display = 'none'; });
             quote.items?.forEach(item => {
@@ -617,7 +629,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (isUploading) { alert("Please wait for photos to finish uploading."); return; }
         const productId = currentProductIdInput.value;
-        if ((productId === 'cartoon-charm' || productId === 'team-swag') && uploadedImageUrls.length === 0) { // UPDATED
+        if ((productId === 'cartoon-charm' || productId === 'team-swag') && uploadedImageUrls.length === 0) {
             alert("Please upload at least one photo for your order."); 
             return;
         }
@@ -636,7 +648,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let orderDetailsString = '';
         let orderData = {
             productId: productId,
-            productName: currentProductData.name,
+            productName: currentProductData?.name || 'AI Generated Character',
             totalEstimatedCost: parseFloat(estimatedCostSpan.textContent),
             customerName: customerNameInput.value.trim(),
             customerEmail: customerEmailInput.value.trim(),
@@ -645,6 +657,8 @@ document.addEventListener('DOMContentLoaded', () => {
             createdBy: auth.currentUser.uid,
             status: 'pending'
         };
+
+        let displayCost = `$${orderData.totalEstimatedCost.toFixed(2)}`;
         
         if (productId === 'bufo') {
             const selectedAddOns = [];
@@ -673,7 +687,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 Add-Ons:
                 ${addOnsText || 'None'}
             `;
-        } else if (productId === 'cartoon-charm' || productId === 'team-swag') { // UPDATED: Logic now applies to both
+        } else if (productId === 'cartoon-charm' || productId === 'team-swag') {
             const items = [];
             document.querySelectorAll('#typeQuantitiesList .item-checkbox:checked').forEach(checkbox => {
                 const type = checkbox.dataset.id;
@@ -697,18 +711,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 Design Fee: $${orderData.designFee.toFixed(2)}
             `;
         } else if (productId === 'ai-generator') {
+            displayCost = '$30 - $50';
             orderData.prompt = aiPromptText.value;
             orderData.generatedImageUrl = productImage.src; 
             orderDetailsString = `
                 Product: AI-Generated Custom Character
                 Prompt: ${orderData.prompt}
-                Generated Image: <a href="${orderData.generatedImageUrl}">View Image</a>
+                Generated Image: <a href="${orderData.generatedImageUrl}" target="_blank">View Image</a>
                 --------------------
-                Estimated Base Price: $${currentProductData.basePrice.toFixed(2)} (pending final quote)
+                Estimated Price: $30 - $50 (pending final quote)
             `;
         }
         
-        if (productId === 'cartoon-charm' || productId === 'team-swag') { // UPDATED
+        if (productId === 'cartoon-charm' || productId === 'team-swag') {
             orderData.photoUrls = uploadedImageUrls;
         }
         
@@ -724,7 +739,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 customer_name: orderData.customerName,
                 customer_email: orderData.customerEmail,
                 order_details: orderDetailsString,
-                total_cost: orderData.totalEstimatedCost.toFixed(2),
+                total_cost: displayCost,
                 notes: orderData.notes || 'No notes provided.',
                 photo_links: photoLinksHtml,
             };
