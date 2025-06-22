@@ -74,8 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // This function remains the same
- async function handleAiImageGeneration(event) {
+    async function handleAiImageGeneration(event) {
         event.preventDefault();
         if (aiLoadingIndicator) aiLoadingIndicator.style.display = 'flex';
         if (generatePreviewBtn) {
@@ -359,8 +358,6 @@ document.addEventListener('DOMContentLoaded', () => {
             myQuotesList.innerHTML = '<li>Error loading history. Check console for details.</li>';
         });
     }
-
-    // --- All other functions below this line remain unchanged ---
 
     function calculateQuote() {
         const productId = currentProductIdInput.value;

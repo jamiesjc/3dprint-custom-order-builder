@@ -39,13 +39,6 @@ app.use(cors(corsOptions));
 app.get("/generateAiImage", async (req, res) => {
   const userPrompt = req.query.prompt || "A cute 3D character";
 
-  //   const fullPrompt =
-  //     `A 3D vinyl toy of a ${userPrompt}, cute and chubby, expressive smiling face. ` +
-  //     "Digital sculpture, smooth glossy surfaces, studio lighting, " +
-  //     "clean solid white background.";
-
-  // In functions/index.js
-
   const fullPrompt =
     `A 3D character of a ${userPrompt}, in the style of modern Pixar animation, sharp focus, crisp details, ` +
     "chibi proportions, joyful and expressive pose. " +

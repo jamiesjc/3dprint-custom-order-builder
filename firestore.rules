@@ -3,17 +3,53 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // This rule allows anyone with your Firestore database reference to view, edit,
-    // and delete all data in your Firestore database. It is useful for getting
-    // started, but it is configured to expire after 30 days because it
-    // leaves your app open to attackers. At that time, all client
-    // requests to your Firestore database will be denied.
-    //
-    // Make sure to write security rules for your app before that time, or else
-    // all client requests to your Firestore database will be denied until you Update
-    // your rules
-    match /{document=**} {
-      allow read, write: if request.time < timestamp.date(2025, 7, 3);
+    // ===== PRODUCTS COLLECTION =====
+    // Anyone can read the list of products and their details.
+    // No one can write/edit/delete products from the website.
+    // You should only add or edit products from the Firebase Console.
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // ===== ADD-ONS COLLECTION =====
+    // Anyone can read the list of available add-ons.
+    // No one can change them from the website.
+    match /addOns/{addOnId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    
+    // ===== QUOTES COLLECTION =====
+    // Users can create, read, and delete their OWN quotes, but not see others'.
+    match /quotes/{quoteId} {
+      // Allow a user to create a quote IF:
+      // 1. They are logged in (request.auth is not null).
+      // 2. The 'userId' in the new document they are creating matches their own ID.
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+
+      // Allow a user to read or delete their own quote IF:
+      // 1. The 'userId' of the document they are trying to access matches their own ID.
+      allow read, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+
+      // Do not allow users to update a quote after it has been created.
+      allow update: if false;
+    }
+
+    // ===== ORDERS COLLECTION =====
+    // Users can create and read their own orders, but CANNOT change or delete them.
+    match /orders/{orderId} {
+      // Allow a user to create a new order IF:
+      // 1. They are logged in.
+      // 2. The 'createdBy' field in the new document matches their own ID.
+      allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
+
+      // Allow a user to read their own order history.
+      allow read: if request.auth != null && request.auth.uid == resource.data.createdBy;
+
+      // IMPORTANT: Do not allow users to update or delete an order after it is placed.
+      // This protects your business records.
+      allow update, delete: if false;
     }
   }
 }

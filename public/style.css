@@ -1,6 +1,6 @@
 /* style.css */
 /* =================================================================== */
-/* 1. Global & Product Page Styles (Affects bufo.html)
+/* 1. Global & Product Page Styles
 /* =================================================================== */
 
 body {
@@ -42,7 +42,6 @@ section {
 .configurator-section { display: flex; flex-direction: column; gap: 15px; }
 .product-image-display { width: 100%; height: 300px; display: flex; justify-content: center; align-items: center; background-color: #eee; border: 1px solid #ddd; overflow: hidden; }
 #productImage { max-width: 100%; max-height: 100%; object-fit: contain; }
-/* !!! CRITICAL FIX STARTS HERE !!! */
 /* This rule is now more specific to AVOID applying 'display: block' to elements inside our new rows */
 .controls div:not(.add-on-item):not(.config-item-row):not(.label-wrapper),
 .controls label:not(.add-on-item *):not(.config-item-row *), 
@@ -53,7 +52,6 @@ section {
     display: block; 
     width: calc(100% - 20px);
 }
-/* !!! CRITICAL FIX ENDS HERE !!! */
 /* Generic form element styles */
 input[type="text"], input[type="email"], input[type="number"], textarea, select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
 button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
@@ -235,7 +233,7 @@ main.product-page { width: 100%; max-width: 1200px; margin: 20px auto; padding: 
 /* Overriding the generic #orderForm for a clean, stacked layout inside the modal */
 #orderModal #orderForm {
     display: flex;
-    flex-direction: column; /* This is the key change */
+    flex-direction: column;
     gap: 15px; /* Creates vertical space between form elements */
     margin-top: 0;
 }
